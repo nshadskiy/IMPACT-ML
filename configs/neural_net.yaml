@@ -1,0 +1,13 @@
+signal: ["YbbHtt", "YttHbb"]
+hidden_layers: [200,200]
+dropout_p: 0.3
+features: "nmssm_v2"
+classes: "nmssm"
+tca: False
+tca_order: 1
+learning_rate: 0.001
+L2: 0.0001
+batch_size: 2000
+early_stopping_patience: 20
+early_stopping_value: 0.1
+one_hot_parametrization: True
