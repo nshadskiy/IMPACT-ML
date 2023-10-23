@@ -99,7 +99,7 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
             rdf = rdf.Filter(f"({selection_conf[cut]})", f"cut on {cut}")
 
         if process == "embedding":
-            rdf = filters.emb_tau_gen_match(rdf=rdf, channel=config["channel"])
+            rdf = filters.emb_boostedtau_gen_match(rdf=rdf, channel=config["channel"])
 
         # calculate event weights
         rdf = rdf.Define("weight", "1.")
@@ -144,33 +144,29 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
         # apply special analysis event filters: tau vs jet ID, btag
         selection_conf = config["special_event_selection"]
         if process == "tau_fakes":
-            if "had_tau_id_vs_jet" in selection_conf:
+            if "had_boostedtau_id_iso" in selection_conf:
                 rdf = rdf.Filter(
-                    f"({selection_conf['had_tau_id_vs_jet'][1]})",
-                    "cut on had_tau_id_vs_jet",
+                    f"({selection_conf['had_boostedtau_id_iso'][1]})",
+                    "cut on had_boostedtau_id_iso",
                 )
-                wp = (
-                    selection_conf["had_tau_id_vs_jet"][1]
-                    .rsplit("&&")[1]
-                    .rsplit("_")[3]
-                )
-                rdf = weights.apply_fake_factors(
+                wp = selection_conf["had_boostedtau_id_iso"][1].rsplit("_")[3]
+                rdf = weights.apply_boosted_fake_factors(
                     rdf=rdf, channel=config["channel"], wp=wp
                 )
         else:
-            if "had_tau_id_vs_jet" in selection_conf:
+            if "had_boostedtau_id_iso" in selection_conf:
                 rdf = rdf.Filter(
-                    f"({selection_conf['had_tau_id_vs_jet'][0]})",
-                    "cut on had_tau_id_vs_jet",
+                    f"({selection_conf['had_boostedtau_id_iso'][0]})",
+                    "cut on had_boostedtau_id_iso",
                 )
-                wp = selection_conf["had_tau_id_vs_jet"][0].rsplit("_")[3]
-                rdf = weights.apply_tau_id_vsJet_weight(
+                wp = selection_conf["had_boostedtau_id_iso"][0].rsplit("_")[3]
+                rdf = weights.apply_boostedtau_id_iso_weight(
                     rdf=rdf, channel=config["channel"], wp=wp
                 )
 
         if "good_bb_pair" in selection_conf:
             if process not in ["tau_fakes", "embedding"]:
-                rdf = weights.apply_btag_weight(rdf=rdf)
+                rdf = weights.apply_boostedtau_btag_weight(rdf=rdf)
             rdf = rdf.Filter(
                 f"({selection_conf['good_bb_pair']})", "cut on good_bb_pair"
             )
@@ -179,7 +175,7 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
         for tau_gen_mode in config["processes"][process]["tau_gen_modes"]:
             tmp_rdf = rdf
             if tau_gen_mode != "all":
-                tmp_rdf = filters.tau_origin_split(
+                tmp_rdf = filters.boostedtau_origin_split(
                     rdf=tmp_rdf, channel=config["channel"], tau_gen_mode=tau_gen_mode
                 )
 

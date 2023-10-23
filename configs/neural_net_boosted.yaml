@@ -2,13 +2,13 @@ signal: ["YbbHtt_res", "YbbHtt_boost", "YttHbb_res", "YttHbb_boost"]
 bb_deltaR_split_value: 0.6
 hidden_layers: [200,200]
 dropout_p: 0.3
-features: "nmssm"
+features: "nmssm_boosted"
 classes: "nmssm"
 tca: False
 tca_order: 1
 learning_rate: 0.001
 L2: 0.0001
-batch_size: 10000
+batch_size: 5000
 early_stopping_patience: 20
 early_stopping_value: 0.1
 one_hot_parametrization: False

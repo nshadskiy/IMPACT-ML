@@ -36,6 +36,15 @@ parser.add_option(
 )
 
 parser.add_option(
+    "-s",
+    "--event-split",
+    dest="event_split",
+    default="even",
+    help="Split of data into training and testing based on the event ID, to options are possible: even or odd; default: even",
+    metavar="even",
+)
+
+parser.add_option(
     "-o",
     "--outputdir",
     dest="savedir",
@@ -80,14 +89,15 @@ log.info("GPU: " + str(torch.cuda.get_device_name(torch.cuda.current_device())))
 data = Data.Data(
     feature_list=featureSets.variables[config["features"]],
     class_dict=classSets.classes[config["classes"]],
-    signal=config["signal"],
+    config=config,
+    event_split=options.event_split,
 )
 
 data.load_data(sample_path=options.inputdata, era=options.era, channel=options.channel)
 
 data.transform(type="standard", one_hot=config["one_hot_parametrization"])
 data.shuffling(seed=None)
-data.split_data(train_fraction=0.7, val_fraction=0.25)
+data.split_data(val_fraction=0.25)
 
 model = NNModel(
     n_input_features=len(data.features + data.param_features),

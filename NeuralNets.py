@@ -270,17 +270,18 @@ class Network:
         for comb in self.data.mass_combinations:
             idx_massX = self.data.mass_indizes["massX"][comb["massX"]]
             idx_massY = self.data.mass_indizes["massY"][comb["massY"]]
+            # idx_massX = int(comb["massX"])
+            # idx_massY = int(comb["massY"])
 
             if self.config["one_hot_parametrization"]:
                 # remove all signal events with wrong mass points
-                mask = (self.data.df_test_labels.isin(signal_labels)) & ~(
-                    (self.data.df_test[f"massX_{idx_massX}"].astype(int))
-                    & (self.data.df_test[f"massY_{idx_massY}"].astype(int))
+                mask = ~(
+                    (self.data.df_test_labels.isin(signal_labels))
+                    & ~(
+                        (self.data.df_test[f"massX_{idx_massX}"].astype(int))
+                        & (self.data.df_test[f"massY_{idx_massY}"].astype(int))
+                    )
                 )
-                log.info(
-                    f"event number of not massX {comb['massX']}, massY {comb['massY']}: {sum(mask)}"
-                )
-                mask = ~mask
                 df_test = self.data.df_test[mask].copy(deep=True)
                 df_test_labels = self.data.df_test_labels[mask].copy(deep=True)
                 # change all mass points to the same values
@@ -305,6 +306,7 @@ class Network:
                 # change all mass points to the same values
                 for param in self.data.param_features:
                     df_test[param] = self.data.mass_indizes[param][comb[param]]
+                    # df_test[param] = int(comb[param])
 
             self.x_test[f"massX_{comb['massX']}_massY_{comb['massY']}"] = torch.tensor(
                 df_test.values.tolist()
@@ -358,18 +360,26 @@ class Network:
                 f"massX_{comb['massX']}_massY_{comb['massY']}"
             ] = self.data.df_test_weights[mask].values
 
+            try:
+                roc_auc = roc_auc_score(
+                    y_true=self.y_test[f"massX_{comb['massX']}_massY_{comb['massY']}"]
+                    .cpu()
+                    .numpy(),
+                    y_score=self.prediction[
+                        f"massX_{comb['massX']}_massY_{comb['massY']}"
+                    ]
+                    .cpu()
+                    .numpy(),
+                    average=None,
+                    multi_class="ovr",
+                    labels=np.array(list(self.data.label_dict.values())),
+                )
+            except:
+                roc_auc = -1 * np.ones(len(self.data.label_dict.values()))
+
             self.roc_auc_scores[
                 f"massX_{comb['massX']}_massY_{comb['massY']}"
-            ] = roc_auc_score(
-                self.y_test[f"massX_{comb['massX']}_massY_{comb['massY']}"]
-                .cpu()
-                .numpy(),
-                self.prediction[f"massX_{comb['massX']}_massY_{comb['massY']}"]
-                .cpu()
-                .numpy(),
-                average=None,
-                multi_class="ovr",
-            )
+            ] = roc_auc
             log.info("-" * 50)
             log.info(f"ROC-AUC scores for massX={comb['massX']}, massY={comb['massY']}")
             for cl in self.data.label_dict:

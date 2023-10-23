@@ -1,12 +1,9 @@
 import matplotlib.pyplot as plt
-from matplotlib.ticker import AutoMinorLocator
-import torch
 import logging
 import numpy as np
 import mplhep as hep
-from sklearn.metrics import roc_auc_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from NeuralNets import Network
-from Data import Data
 
 log = logging.getLogger("training")
 plt.style.use(hep.style.CMS)
@@ -127,7 +124,7 @@ def multiclass_nodes(network: Network) -> None:
                 h, edges = np.histogram(
                     pred, bins=15, range=(0.0, 1.0), weights=pred_weights
                 )
-                hep.histplot(h, bins=edges, ax=ax, label=proc, density=True, yerr=True)
+                hep.histplot(h, bins=edges, ax=ax, label=proc, density=True, yerr=False)
 
             ax.legend()
             plt.xlabel(f"{cl} node", fontsize=24)
@@ -226,7 +223,7 @@ def multiclass_classes(network: Network) -> None:
                 ax=ax,
                 label=bkg_hist_label,
                 density=False,
-                yerr=True,
+                yerr=False,
             )
 
             for proc in network.data.classes:
@@ -259,7 +256,7 @@ def multiclass_classes(network: Network) -> None:
                         pred, bins=15, range=(0.0, 1.0), weights=pred_weights
                     )
                     hep.histplot(
-                        h, bins=edges, ax=ax, label=proc, density=False, yerr=True
+                        h, bins=edges, ax=ax, label=proc, density=False, yerr=False
                     )
 
             ax.legend()
@@ -296,10 +293,11 @@ def confusion(network: Network) -> None:
         )
 
         cm = confusion_matrix(
-            network.y_test[f"massX_{comb['massX']}_massY_{comb['massY']}"]
+            y_true=network.y_test[f"massX_{comb['massX']}_massY_{comb['massY']}"]
             .cpu()
             .numpy(),
-            class_idx,
+            y_pred=class_idx,
+            labels=np.array(list(network.data.label_dict.values())),
             normalize="true",
         )
         cm = np.round(cm, 2)
@@ -308,7 +306,8 @@ def confusion(network: Network) -> None:
         cm_plot = ConfusionMatrixDisplay(
             confusion_matrix=cm, display_labels=network.data.classes
         )
-        cm_plot.plot(xticks_rotation=45)
+        fig, ax = plt.subplots(figsize=(10, 10))
+        cm_plot.plot(ax=ax, xticks_rotation=65, colorbar=False)
         plt.tight_layout()
 
         plt.savefig(
