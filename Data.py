@@ -47,7 +47,7 @@ class Data:
         self.config = config
         self.event_split = event_split
 
-    def load_data(self, sample_path: str, era: str, channel: str) -> None:
+    def load_data(self, sample_path: str, era: str, channel: str, shuffle_seed: Union[int, None] = None, val_fraction: float = 0.2) -> None:
         """
         General function to load data from root files into a pandas DataFrame.
 
@@ -55,6 +55,8 @@ class Data:
                 sample_path: Absolute path to root files e.g. "/ceph/path/to/root_files"
                 era: Data taking era e.g. "2018"
                 channel: Analysis channel e.g. "mt" for the mu tau channel in a tau analysis
+                shuffle_seed: Integer which is used as shuffle seed (default is a random seed)
+                val_fraction: Float number as fraction of the training data that should be used for validation
 
         Return:
                 None
@@ -76,25 +78,36 @@ class Data:
             "r",
         ) as file:
             self.mass_combinations = yaml.load(file, yaml.FullLoader)
+        self.plot_mass_combinations = self.config["plot_mass_combinations"]
 
         log.info("-" * 50)
-        log.info(f"loading samples from {self.sample_path} for training")
-        self.samples_train = self._load_samples(event_ID=self.event_split)
-        self.df_all_train = pd.concat(self.samples_train, sort=True)
+        log.info(f"loading {self.event_split} samples from {self.sample_path} for training")
+        self.samples_train, self.samples_val = self._load_training_samples(event_ID=self.event_split, shuffle_seed=shuffle_seed, val_fraction=val_fraction)
+        self.df_train = pd.concat(self.samples_train)
+        self.df_val = pd.concat(self.samples_val)
         log.info("-" * 50)
-        log.info(f"loading samples from {self.sample_path} for testing")
         if self.event_split == "even":
-            self.samples_test = self._load_samples(event_ID="odd")
+            log.info(f"loading odd samples from {self.sample_path} for testing")
+            self.samples_test = self._load_testing_samples(event_ID="odd")
         elif self.event_split == "odd":
-            self.samples_test = self._load_samples(event_ID="even")
+            log.info(f"loading even samples from {self.sample_path} for testing")
+            self.samples_test = self._load_testing_samples(event_ID="even")
         else:
             raise ValueError("Event split wrongly defined.")
 
         self.df_test = pd.concat(self.samples_test, sort=True)
+        
+        log.info("-" * 50)
+        log.info("balancing classes in training dataset")
         self._balance_samples()
+        
         if len(self.mass_combinations) > 0:
+            log.info("-" * 50)
+            log.info("balancing signal in training dataset")
             self._balance_signal_samples()
-        self.df_all_train = self.df_all_train.reset_index(drop=True)
+            
+        # self.df_train = self.df_train.reset_index(drop=True)
+        # self.df_val = self.df_val.reset_index(drop=True)
         self.df_test = self.df_test.reset_index(drop=True)
 
         del self.samples_train
@@ -131,14 +144,23 @@ class Data:
                 for param in self.param_features:
                     trans_masses = [
                         self.mass_indizes[param][str(mass)]
-                        for mass in self.df_all_train[param]
+                        for mass in self.df_train[param]
                     ]
                     n_diff_masses = np.max(trans_masses) + 1
                     trans_masses = np.eye(n_diff_masses)[trans_masses]
                     for n in range(n_diff_masses):
-                        self.df_all_train[f"{param}_{n}"] = trans_masses[:, n]
+                        self.df_train[f"{param}_{n}"] = trans_masses[:, n]
                         tmp_param_features.append(f"{param}_{n}")
 
+                    trans_masses = [
+                        self.mass_indizes[param][str(mass)]
+                        for mass in self.df_val[param]
+                    ]
+                    n_diff_masses = np.max(trans_masses) + 1
+                    trans_masses = np.eye(n_diff_masses)[trans_masses]
+                    for n in range(n_diff_masses):
+                        self.df_val[f"{param}_{n}"] = trans_masses[:, n]
+                        
                     trans_masses = [
                         self.mass_indizes[param][str(mass)]
                         for mass in self.df_test[param]
@@ -154,9 +176,16 @@ class Data:
                 for param in self.param_features:
                     trans_masses = [
                         self.mass_indizes[param][str(mass)]
-                        for mass in self.df_all_train[param]
+                        for mass in self.df_train[param]
                     ]
-                    self.df_all_train[param] = trans_masses
+                    self.df_train[param] = trans_masses
+                    
+                    trans_masses = [
+                        self.mass_indizes[param][str(mass)]
+                        for mass in self.df_val[param]
+                    ]
+                    self.df_val[param] = trans_masses
+                    
                     trans_masses = [
                         self.mass_indizes[param][str(mass)]
                         for mass in self.df_test[param]
@@ -167,16 +196,28 @@ class Data:
             log.info("-" * 50)
             log.info("Standard Transformation")
             st = StandardScaler()
-            st.fit(self.df_all_train[self.features])
+            st.fit(self.df_train[self.features])
+            
+            self.transform_feature_dict = dict()
+            for idx, feature in enumerate(self.features):
+                self.transform_feature_dict[feature] = {"mean": st.mean_[idx], "std": st.scale_[idx]}
 
             st_df_train = pd.DataFrame(
-                data=st.transform(self.df_all_train[self.features]),
+                data=st.transform(self.df_train[self.features]),
                 columns=self.features,
-                index=self.df_all_train.index,
+                index=self.df_train.index,
             )
             for feature in self.features:
-                self.df_all_train[feature] = st_df_train[feature]
+                self.df_train[feature] = st_df_train[feature]
 
+            st_df_val = pd.DataFrame(
+                data=st.transform(self.df_val[self.features]),
+                columns=self.features,
+                index=self.df_val.index,
+            )
+            for feature in self.features:
+                self.df_val[feature] = st_df_val[feature]
+                
             st_df_test = pd.DataFrame(
                 data=st.transform(self.df_test[self.features]),
                 columns=self.features,
@@ -186,6 +227,7 @@ class Data:
                 self.df_test[feature] = st_df_test[feature]
 
             del st_df_train
+            del st_df_val
             del st_df_test
             log.debug(st.mean_)
             log.debug(st.scale_)
@@ -195,16 +237,24 @@ class Data:
             log.info("-" * 50)
             log.info("Quantile Transformation")
             qt = QuantileTransformer(n_quantiles=500, output_distribution="normal")
-            qt.fit(self.df_all_train[self.features])
+            qt.fit(self.df_train[self.features])
 
             qt_df_train = pd.DataFrame(
-                data=qt.transform(self.df_all_train[self.features]),
+                data=qt.transform(self.df_train[self.features]),
                 columns=self.features,
-                index=self.df_all_train.index,
+                index=self.df_train.index,
             )
             for feature in self.features:
-                self.df_all_train[feature] = qt_df_train[feature]
+                self.df_train[feature] = qt_df_train[feature]
 
+            qt_df_val = pd.DataFrame(
+                data=qt.transform(self.df_val[self.features]),
+                columns=self.features,
+                index=self.df_val.index,
+            )
+            for feature in self.features:
+                self.df_val[feature] = qt_df_val[feature]
+                
             qt_df_test = pd.DataFrame(
                 data=qt.transform(self.df_test[self.features]),
                 columns=self.features,
@@ -214,6 +264,7 @@ class Data:
                 self.df_test[feature] = qt_df_test[feature]
 
             del qt_df_train
+            del qt_df_val
             del qt_df_test
 
         else:
@@ -235,14 +286,15 @@ class Data:
 
         log.info("-" * 50)
         log.info(f"using {self.shuffle_seed} as seed to shuffle data")
-        self.df_all_train = shuffle(self.df_all_train, random_state=self.shuffle_seed)
+        self.df_train = shuffle(self.df_train, random_state=self.shuffle_seed)
+        self.df_val = shuffle(self.df_val, random_state=self.shuffle_seed)
 
-    def split_data(self, val_fraction: float = 0.2) -> None:
+    def prepare_for_training(self) -> None:
         """
-        Splits the data into a training, validation and test set.
+        Prepare data for training by spliting training features, label and weights.
 
         Args:
-                val_fraction: Float number as fraction of the training data that should be used for validation.
+                None
 
         Return:
                 None
@@ -255,9 +307,6 @@ class Data:
         self.df_test = self.df_test[self.features + self.param_features]
 
         # defining train dataset
-        n_val = int(self.df_all_train.shape[0] * val_fraction)
-
-        self.df_train = self.df_all_train.tail(self.df_all_train.shape[0] - n_val)
         self.df_train_labels = self.df_train["label"]
         self.df_train_weights = self.df_train["weight"]
 
@@ -265,7 +314,7 @@ class Data:
         self.df_train_labels = self.df_train_labels.values
         self.df_train_weights = self.df_train_weights.values
 
-        self.df_val = self.df_all_train.head(n_val)
+        # defining validation dataset
         self.df_val_labels = self.df_val["label"]
         self.df_val_weights = self.df_val["weight"]
 
@@ -273,16 +322,79 @@ class Data:
         self.df_val_labels = self.df_val_labels.values
         self.df_val_weights = self.df_val_weights.values
 
+
     #########################################################################################
     ### private functions ###
     #########################################################################################
 
-    def _load_samples(self, event_ID: str) -> List[pd.DataFrame]:
+    def _load_training_samples(self, event_ID: str, shuffle_seed: Union[int, None] = None, val_fraction: float = 0.2) -> List[pd.DataFrame]:
         """
         Loading data from root files into a pandas DataFrame based on defined classes for the neural network task.
 
         Args:
-                None
+                event_ID: String to specify to select events with "even" or "odd" IDs
+                shuffle_seed: Integer which is used as shuffle seed (default is a random seed)
+                val_fraction: Float number as fraction of the training data that should be used for validation
+
+        Return:
+                List of pandas DataFrames with one DataFrame for each class
+        """
+        class_data_train = list()
+        class_data_val = list()
+
+        for cl in self.file_dict:
+            log.info("-" * 50)
+            log.info(f"loading {cl} class")
+
+            tmp_file_dict = dict()
+            # define a dictionary of all files in a class which is then used to load the data with uproot
+            for file in self.file_dict[cl]:
+                tmp_file_dict[
+                    os.path.join(
+                        self.sample_path,
+                        "preselection",
+                        self.era,
+                        self.channel,
+                        event_ID,
+                        file + ".root",
+                    )
+                ] = "ntuple"
+            log.info(tmp_file_dict)
+
+            events = uproot.concatenate(tmp_file_dict)
+            # transform the loaded awkward array to a pandas DataFrame
+            df = ak.to_dataframe(events)
+            df = self._randomize_masses(df, cl)
+            df = self._add_labels(df, cl)
+            log.info(f"number of events for {cl}: {df.shape[0]}")
+            df = df.reset_index(drop=True)
+            
+            # shuffle data before training/validation, especially relevant for multi mass signal samples
+            self.shuffle_seed = np.random.randint(low=0, high=2**16)
+            if shuffle_seed is not None:
+                self.shuffle_seed = shuffle_seed
+
+            log.info("-" * 50)
+            log.info(f"using {self.shuffle_seed} as seed to shuffle data")
+            df = shuffle(df, random_state=self.shuffle_seed)
+            
+            # split samples in training and validation
+            n_val = int(df.shape[0] * val_fraction)
+            df_train = df.tail(df.shape[0] - n_val)
+            df_val = df.head(n_val)
+
+            class_data_train.append(df_train.copy())
+            class_data_val.append(df_val.copy())
+
+        return class_data_train, class_data_val
+    
+    
+    def _load_testing_samples(self, event_ID: str) -> List[pd.DataFrame]:
+        """
+        Loading data from root files into a pandas DataFrame based on defined classes for the neural network task.
+
+        Args:
+                event_ID: String to specify to select events with "even" or "odd" IDs
 
         Return:
                 List of pandas DataFrames with one DataFrame for each class
@@ -318,6 +430,7 @@ class Data:
             class_data.append(df.copy())
 
         return class_data
+    
 
     def _randomize_masses(self, df: pd.DataFrame, cl: str) -> pd.DataFrame:
         """
@@ -388,24 +501,22 @@ class Data:
                 None
         """
         log.info("-" * 50)
-        sum_weights_all = sum(self.df_all_train["weight"].values)
+        sum_weights_all = sum(self.df_train["weight"].values) + sum(self.df_val["weight"].values)
         for cl in self.classes:
-            mask = self.df_all_train["label"].isin([self.label_dict[cl]])
+            mask_train = self.df_train["label"].isin([self.label_dict[cl]])
+            mask_val = self.df_val["label"].isin([self.label_dict[cl]])
+            sum_weights_class = sum(self.df_train.loc[mask_train, 'weight'].values) + sum(self.df_val.loc[mask_val, 'weight'].values)
             log.info(
-                f"weight sum before class balance for {cl}: {sum(self.df_all_train.loc[mask, 'weight'].values)}"
+                f"weight sum before class balance for {cl}: {sum_weights_class}"
             )
-            self.df_all_train.loc[mask, "weight"] = self.df_all_train.loc[
-                mask, "weight"
-            ] * (
-                sum_weights_all
-                / (
-                    len(self.classes)
-                    * sum(self.df_all_train.loc[mask, "weight"].values)
-                )
-            )
+            self.df_train.loc[mask_train, "weight"] = self.df_train.loc[mask_train, "weight"] * (sum_weights_all / (len(self.classes) * sum_weights_class))
+            self.df_val.loc[mask_val, "weight"] = self.df_val.loc[mask_val, "weight"] * (sum_weights_all / (len(self.classes) * sum_weights_class))
+            
+            sum_weights_class_new = sum(self.df_train.loc[mask_train, 'weight'].values) + sum(self.df_val.loc[mask_val, 'weight'].values)
             log.info(
-                f"weight sum after class balance for {cl}: {sum(self.df_all_train.loc[mask, 'weight'].values)}"
+                f"weight sum after class balance for {cl}: {sum_weights_class_new}"
             )
+
 
     def _balance_signal_samples(self):
         """
@@ -419,31 +530,43 @@ class Data:
         """
         log.info("-" * 50)
         for sig in self.signal:
-            df_sig = self.df_all_train[
-                self.df_all_train["label"] == self.label_dict[sig]
+            df_sig_train = self.df_train[
+                self.df_train["label"] == self.label_dict[sig]
             ]
-            sum_weights_sig = sum(df_sig["weight"].values)
+            df_sig_val = self.df_val[
+                self.df_val["label"] == self.label_dict[sig]
+            ]
+            sum_weights_sig = sum(df_sig_train["weight"].values) + sum(df_sig_val["weight"].values)
             for comb in self.mass_combinations:
-                mask = (
-                    (self.df_all_train["label"] == self.label_dict[sig])
-                    & (self.df_all_train["massX"] == int(comb["massX"]))
-                    & (self.df_all_train["massY"] == int(comb["massY"]))
+                mask_train = (
+                    (self.df_train["label"] == self.label_dict[sig])
+                    & (self.df_train["massX"] == int(comb["massX"]))
+                    & (self.df_train["massY"] == int(comb["massY"]))
                 )
+                mask_val = (
+                    (self.df_val["label"] == self.label_dict[sig])
+                    & (self.df_val["massX"] == int(comb["massX"]))
+                    & (self.df_val["massY"] == int(comb["massY"]))
+                )
+                evt_num = sum(mask_train)+sum(mask_val)
                 log.info(
-                    f"event number massX {comb['massX']}, massY {comb['massY']}: {sum(mask)}"
+                    f"event number massX {comb['massX']}, massY {comb['massY']}: {evt_num}"
                 )
+                sum_weights_sig_mass = sum(self.df_train.loc[mask_train, 'weight'].values) + sum(self.df_val.loc[mask_val, 'weight'].values)
                 log.info(
-                    f"weight sum before signal mass balance for {sig}, massX {comb['massX']}, massY {comb['massY']}: {sum(self.df_all_train.loc[mask, 'weight'].values)}"
+                    f"weight sum before signal mass balance for {sig}, massX {comb['massX']}, massY {comb['massY']}: {sum_weights_sig_mass}"
                 )
-                self.df_all_train.loc[mask, "weight"] = self.df_all_train.loc[
-                    mask, "weight"
-                ] * (
-                    sum_weights_sig
-                    / (
-                        len(self.mass_combinations)
-                        * sum(self.df_all_train.loc[mask, "weight"].values)
+                if evt_num > 0:
+                    if sum(mask_train) > 0:
+                        self.df_train.loc[mask_train, "weight"] = self.df_train.loc[mask_train, "weight"] * (sum_weights_sig / (len(self.mass_combinations) * sum_weights_sig_mass))
+                    if sum(mask_val) > 0:
+                        self.df_val.loc[mask_val, "weight"] = self.df_val.loc[mask_val, "weight"] * (sum_weights_sig / (len(self.mass_combinations) * sum_weights_sig_mass))
+                    
+                    sum_weights_all_new = sum(self.df_train.loc[mask_train, 'weight'].values) + sum(self.df_val.loc[mask_val, 'weight'].values)
+                    log.info(
+                        f"weight sum after signal mass balance for {sig}, massX {comb['massX']}, massY {comb['massY']}: {sum_weights_all_new}"
                     )
-                )
-                log.info(
-                    f"weight sum after signal mass balance for {sig}, massX {comb['massX']}, massY {comb['massY']}: {sum(self.df_all_train.loc[mask, 'weight'].values)}"
-                )
+                else:
+                    log.info(
+                        f"no signal mass balance for {sig}, massX {comb['massX']}, massY {comb['massY']} because no events selected"
+                    )

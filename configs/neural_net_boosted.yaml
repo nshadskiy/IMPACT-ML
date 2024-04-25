@@ -1,14 +1,70 @@
 signal: ["YbbHtt_res", "YbbHtt_boost", "YttHbb_res", "YttHbb_boost"]
-bb_deltaR_split_value: 0.6
-hidden_layers: [200,200]
-dropout_p: 0.3
+bb_deltaR_split_value: 0.5
+hidden_layers: [500,500,300]
+dropout_p: 0.4
 features: "nmssm_boosted"
-classes: "nmssm"
+classes: "nmssm_boosted"
 tca: False
 tca_order: 1
-learning_rate: 0.001
-L2: 0.0001
-batch_size: 5000
-early_stopping_patience: 20
+learning_rate: 0.0001
+L2: 0.001
+batch_size: 10000
+early_stopping_patience: 50
 early_stopping_value: 0.1
 one_hot_parametrization: False
+
+plot_mass_combinations:
+    - massX: '280'
+      massY: '70'
+    - massX: '280'
+      massY: '125'
+    - massX: '450'
+      massY: '70'
+    - massX: '450'
+      massY: '125'
+    - massX: '450'
+      massY: '250'
+    - massX: '800'
+      massY: '70'
+    - massX: '800'
+      massY: '125'
+    - massX: '800'
+      massY: '250'
+    - massX: '800'
+      massY: '500'
+    - massX: '1200'
+      massY: '70'
+    - massX: '1200'
+      massY: '125'
+    - massX: '1200'
+      massY: '250'
+    - massX: '1200'
+      massY: '500'
+    - massX: '1200'
+      massY: '1000'
+    - massX: '2000'
+      massY: '70'
+    - massX: '2000'
+      massY: '125'
+    - massX: '2000'
+      massY: '250'
+    - massX: '2000'
+      massY: '500'
+    - massX: '2000'
+      massY: '1000'
+    - massX: '2000'
+      massY: '1600'
+    - massX: '4000'
+      massY: '70'
+    - massX: '4000'
+      massY: '125'
+    - massX: '4000'
+      massY: '250'
+    - massX: '4000'
+      massY: '500'
+    - massX: '4000'
+      massY: '1000'
+    - massX: '4000'
+      massY: '1600'
+    - massX: '4000'
+      massY: '2800'

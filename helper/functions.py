@@ -115,7 +115,7 @@ def check_inputfiles(path: str, process: str, tree: str) -> List[str]:
     """
     log = logging.getLogger(f"preselection.{process}")
 
-    fsname = "root://cmsxrootd-kit.gridka.de/"
+    fsname = "root://cmsxrootd-kit-disk.gridka.de/"
     xrdclient = client.FileSystem(fsname)
     status, listing = xrdclient.dirlist(path.replace(fsname, ""))
 
@@ -198,6 +198,27 @@ def get_output_name(
         return os.path.join(path, f"{process}{tau_gen_mode}.root")
 
 
+def get_wps(cut_string: str) -> Union[List[str], str]:
+    """
+    This function reads out the tau id vs jet working points based on the cut string.
+    The names of the tau id variable is expected to be "id_tau_vsJet_{WP}_*".
+
+    Args:
+        cut_string: String with the tau id vs jet cuts
+
+    Return:
+        One working point or if the cut is between two working points a list of two working points
+    """
+    if "&&" in cut_string:
+        wp_1 = cut_string.rsplit("&&")[0].rsplit("_")[3]
+        wp_2 = cut_string.rsplit("&&")[1].rsplit("_")[3]
+        wps = [wp_1, wp_2]
+    else:
+        wps = cut_string.rsplit("_")[3]
+
+    return wps
+
+
 def get_mass_combinations(masses_X: List[int], masses_Y: List[int]) -> List[Dict]:
     """
     Function generates all kinematically possible mass combinations.
@@ -214,7 +235,8 @@ def get_mass_combinations(masses_X: List[int], masses_Y: List[int]) -> List[Dict
     for x in masses_X:
         for y in masses_Y:
             if (x - y) > 125:
-                mass_combinations.append({"massX": str(x), "massY": str(y)})
+                if not (x==3000 and y==2800): # missing sample for 2018
+                    mass_combinations.append({"massX": str(x), "massY": str(y)})
 
     return mass_combinations
 

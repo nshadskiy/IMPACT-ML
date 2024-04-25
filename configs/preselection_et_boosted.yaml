@@ -3,11 +3,11 @@
 ntuple_path: "root://cmsxrootd-kit-disk.gridka.de//store/user/nshadskiy/CROWN/ntuples/02_2024_nmssm_v4/CROWNRun"
 friends: ["fake_factors_v1","mass_fits_v2"]
 era: "2018"
-channel: "mt"
+channel: "et"
 tree: "ntuple"
 event_split: "odd"
 
-output_path: "/ceph/nshadskiy/nmssm_ml/02_2024_v2_reduced_boosted"
+output_path: "/ceph/nshadskiy/nmssm_ml/02_2024_v2_boosted"
 
 processes:
     HToTauTau:
@@ -77,10 +77,10 @@ processes:
         tau_gen_modes:
             - "all"
         samples:
-            - "SingleMuon_Run2018A-UL2018_GT36"
-            - "SingleMuon_Run2018B-UL2018_GT36"
-            - "SingleMuon_Run2018C-UL2018_GT36"
-            - "SingleMuon_Run2018D-UL2018_GT36"
+            - "EGamma_Run2018A-UL2018"
+            - "EGamma_Run2018B-UL2018"
+            - "EGamma_Run2018C-UL2018"
+            - "EGamma_Run2018D-UL2018"
 
     XToYHTo2Tau2B:
         tau_gen_modes:
@@ -98,11 +98,11 @@ general_event_selection:
     had_tau_pt: "boosted_pt_2 > 40"
     had_tau_eta: "abs(boosted_eta_2) < 2.3"
     had_tau_decay_mode: "(boosted_tau_decaymode_2 == 0) || (boosted_tau_decaymode_2 == 1) || (boosted_tau_decaymode_2 == 10)"
-    had_tau_id_anti_ele: "id_boostedtau_antiEle_VLoose_2 > 0.5"
-    had_tau_id_anti_mu: "id_boostedtau_antiMu_Loose_2 > 0.5"
-    single_trigger: "(((trg_single_mu50_boosted > 0.5) && (boosted_pt_1 >= 55)) || ((trg_single_mu24_boosted > 0.5) && (boosted_iso_1 < 0.3) && (boosted_pt_1 > 25) && (boosted_pt_1 < 55)))"
+    had_tau_id_anti_ele: "id_boostedtau_antiEle_Loose_2 > 0.5"
+    # had_tau_id_anti_mu: "id_boostedtau_antiMu_Loose_2 > 0.5"
+    single_trigger: "(((trg_single_ele115_boosted > 0.5) && (boosted_pt_1 >= 120)) || ((trg_single_ele35_boosted > 0.5) && (boosted_iso_1 < 0.3) && (boosted_pt_1 > 38) && (boosted_pt_1 < 120)))"
     tau_pair_sign: "(boosted_q_1*boosted_q_2) < 0" 
-    no_extra_lep: "(boosted_extramuon_veto < 0.5) && (extraelec_veto < 0.5) && (dilepton_veto < 0.5)"
+    no_extra_lep: "(extramuon_veto < 0.5) && (boosted_extraelec_veto < 0.5) && (dilepton_veto < 0.5)"
     good_tautau_pair: "(boosted_deltaR_ditaupair<=0.8)"
 
 special_event_selection:
@@ -112,11 +112,11 @@ special_event_selection:
 mc_weights:
     # general weights: string is passed directly as weight
     # pileup: "puweight"
-    lep_iso: "iso_wgt_mu_boosted_1"
-    lep_id: "id_wgt_mu_boosted_1"
-    had_tau_id_vs_ele: (boosted_gen_match_2==5) * ((id_boostedtau_antiEle_VLoose_2>0.5)*id_wgt_boostedtau_antiEle_VLoose_2 + (id_boostedtau_antiEle_VLoose_2<0.5)) + (boosted_gen_match_2!=5)
-    had_tau_id_vs_mu: (boosted_gen_match_2==5) * ((id_boostedtau_antiMu_Loose_2>0.5)*id_wgt_boostedtau_antiMu_Loose_2 + (id_boostedtau_antiMu_Loose_2<0.5)) + (boosted_gen_match_2!=5)
-    single_trigger: "trg_wgt_single_mu50_boosted * (boosted_pt_1 >= 55) + trg_wgt_single_mu24_boosted * ((boosted_pt_1 >= 25) && (boosted_pt_1 < 55))"
+    lep_iso: "iso_wgt_ele_boosted_1"
+    lep_id: "id_wgt_ele_boosted_1"
+    had_tau_id_vs_ele: (boosted_gen_match_2==5) * ((id_boostedtau_antiEle_Loose_2>0.5)*id_wgt_boostedtau_antiEle_Loose_2 + (id_boostedtau_antiEle_Loose_2<0.5)) + (boosted_gen_match_2!=5)
+    # had_tau_id_vs_mu: (boosted_gen_match_2==5) * ((id_boostedtau_antiMu_Loose_2>0.5)*id_wgt_boostedtau_antiMu_Loose_2 + (id_boostedtau_antiMu_Loose_2<0.5)) + (boosted_gen_match_2!=5)
+    # single_trigger: ""
 
     # special weights: these are not generally applied, e.g. only for a specific process or era
     # here the string is a needed information to apply the weight -> see corresponding functions

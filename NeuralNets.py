@@ -87,7 +87,7 @@ class Network:
 
     def weightedNLLLoss(self, y_pred, y_true, weights=None):
         loss_func = nn.NLLLoss(reduction="none")
-        y_pred = F.log_softmax(y_pred, dim=1)
+        # y_pred = F.log_softmax(y_pred, dim=1)
 
         if weights is not None:
             return loss_func(y_pred, y_true) * weights
@@ -139,12 +139,12 @@ class Network:
                 x_var = Variable(x_batch)
                 x_var_weights = Variable(x_batch_weights)
                 y_var = Variable(y_batch)
-
+                
                 # zero the parameter gradients
                 self.optimizer.zero_grad()
 
                 # forward pass
-                net_out = self.model(x_var)
+                net_out = self.model(x_var).log()
                 weights = x_var_weights / x_var_weights.mean()
                 loss = self.weightedNLLLoss(net_out, y_var, weights)
                 loss = loss.mean()
@@ -174,7 +174,7 @@ class Network:
                 y_val_var = Variable(y_val_batch)
 
                 with torch.no_grad():
-                    net_val_out = self.model(x_val_var)
+                    net_val_out = self.model(x_val_var).log()
                     val_weights = x_val_var_weights / x_val_var_weights.mean()
                     val_loss = self.weightedNLLLoss(net_val_out, y_val_var, val_weights)
                     val_loss = val_loss.mean()
@@ -187,6 +187,18 @@ class Network:
                 best_val_loss = np.mean(v_loss_log)
                 self.best_epoch = e + 1
                 self.best_model_dict = self.model.state_dict()
+                
+                # saving best model to be used later in CROWN, needs to be saved on cpu because ROOT/SOFIE is not supporting CUDA
+                self.model.to("cpu")
+                if self.do_tca:
+                    m = torch.jit.script(self.model.model)
+                else:
+                    # example_input = torch.randn_like(x_val_var[0]).to("cpu")
+                    example_input = torch.randn(1, len(self.data.features+self.data.param_features)).to("cpu")
+                    torch.onnx.export(self.model, example_input, self.save_path + f"/{self.data.channel}_best_pnn_{self.data.event_split}.onnx")
+                    m = torch.jit.script(self.model)
+                torch.jit.save(m, self.save_path + f"/{self.data.channel}_best_pnn_{self.data.event_split}.pt")
+                self.model.to(self.device)
 
             log.info(
                 "Epoch: {} - Train. Loss: {:.6f} - Val. Loss: {:.6f}".format(
@@ -200,6 +212,7 @@ class Network:
                 log.info("Early stopping")
                 break
 
+    # this functions is outdated
     def predict(self):
         self.x_test = torch.tensor(self.data.df_test.tolist()).to(self.device)
         self.y_test = torch.tensor(self.data.df_test_labels.tolist()).to(self.device)
@@ -241,7 +254,7 @@ class Network:
 
         with torch.no_grad():
             self.prediction = self.best_model(xT_var)
-            self.prediction = F.softmax(self.prediction, dim=1)
+            # self.prediction = F.softmax(self.prediction, dim=1)
         self.pred_weights = self.data.df_test_weights
 
         self.roc_auc_scores = roc_auc_score(
@@ -267,21 +280,16 @@ class Network:
         for sig in self.data.signal:
             signal_labels.append(self.data.label_dict[sig])
 
-        for comb in self.data.mass_combinations:
+        for comb in self.data.plot_mass_combinations:
             idx_massX = self.data.mass_indizes["massX"][comb["massX"]]
             idx_massY = self.data.mass_indizes["massY"][comb["massY"]]
-            # idx_massX = int(comb["massX"])
-            # idx_massY = int(comb["massY"])
 
             if self.config["one_hot_parametrization"]:
                 # remove all signal events with wrong mass points
-                mask = ~(
-                    (self.data.df_test_labels.isin(signal_labels))
-                    & ~(
-                        (self.data.df_test[f"massX_{idx_massX}"].astype(int))
-                        & (self.data.df_test[f"massY_{idx_massY}"].astype(int))
-                    )
-                )
+                mask = ~((self.data.df_test_labels.isin(signal_labels)) & ~(
+                    (self.data.df_test[f"massX_{idx_massX}"].astype(int))
+                    & (self.data.df_test[f"massY_{idx_massY}"].astype(int))
+                ))
                 df_test = self.data.df_test[mask].copy(deep=True)
                 df_test_labels = self.data.df_test_labels[mask].copy(deep=True)
                 # change all mass points to the same values
@@ -305,8 +313,7 @@ class Network:
                 df_test_labels = self.data.df_test_labels[mask].copy(deep=True)
                 # change all mass points to the same values
                 for param in self.data.param_features:
-                    df_test[param] = self.data.mass_indizes[param][comb[param]]
-                    # df_test[param] = int(comb[param])
+                    df_test[param] = self.data.mass_indizes[param][comb[param]] # - self.data.transform_feature_dict[param]["mean"] / self.data.transform_feature_dict[param]["std"]
 
             self.x_test[f"massX_{comb['massX']}_massY_{comb['massY']}"] = torch.tensor(
                 df_test.values.tolist()
@@ -355,7 +362,7 @@ class Network:
             with torch.no_grad():
                 self.prediction[
                     f"massX_{comb['massX']}_massY_{comb['massY']}"
-                ] = F.softmax(self.best_model(xT_var), dim=1)
+                ] = self.best_model(xT_var)
             self.pred_weights[
                 f"massX_{comb['massX']}_massY_{comb['massY']}"
             ] = self.data.df_test_weights[mask].values
@@ -365,9 +372,7 @@ class Network:
                     y_true=self.y_test[f"massX_{comb['massX']}_massY_{comb['massY']}"]
                     .cpu()
                     .numpy(),
-                    y_score=self.prediction[
-                        f"massX_{comb['massX']}_massY_{comb['massY']}"
-                    ]
+                    y_score=self.prediction[f"massX_{comb['massX']}_massY_{comb['massY']}"]
                     .cpu()
                     .numpy(),
                     average=None,
@@ -377,9 +382,7 @@ class Network:
             except:
                 roc_auc = -1 * np.ones(len(self.data.label_dict.values()))
 
-            self.roc_auc_scores[
-                f"massX_{comb['massX']}_massY_{comb['massY']}"
-            ] = roc_auc
+            self.roc_auc_scores[f"massX_{comb['massX']}_massY_{comb['massY']}"] = roc_auc
             log.info("-" * 50)
             log.info(f"ROC-AUC scores for massX={comb['massX']}, massY={comb['massY']}")
             for cl in self.data.label_dict:

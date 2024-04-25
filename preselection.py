@@ -68,15 +68,16 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
             chain.Add(ntuple)
 
         if "friends" in config:
-            friend_list = []
-            for ntuple in ntuple_list:
-                friend_list.append(
-                    ntuple.replace("CROWNRun", "CROWNFriends/" + config["friends"])
-                )
-            fchain = ROOT.TChain(config["tree"])
-            for friend in friend_list:
-                fchain.Add(friend)
-            chain.AddFriend(fchain)
+            for friend in config["friends"]:
+                friend_list = []
+                for ntuple in ntuple_list:
+                    friend_list.append(
+                        ntuple.replace("CROWNRun", "CROWNFriends/" + friend)
+                    )
+                fchain = ROOT.TChain(config["tree"])
+                for friend in friend_list:
+                    fchain.Add(friend)
+                chain.AddFriend(fchain)
 
         rdf = ROOT.RDataFrame(chain)
 
@@ -136,8 +137,8 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
                 else:
                     rdf = rdf.Redefine("weight", f"weight * ({mc_weight_conf[weight]})")
 
-        emb_weight_conf = config["emb_weights"]
         if process == "embedding":
+            emb_weight_conf = config["emb_weights"]
             for weight in emb_weight_conf:
                 rdf = rdf.Redefine("weight", f"weight * ({emb_weight_conf[weight]})")
 
@@ -174,6 +175,17 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
             rdf = rdf.Filter(
                 f"({selection_conf['good_bb_pair']})", "cut on good_bb_pair"
             )
+            
+        # additional variable definitions
+        # rdf = rdf.Define("deltaPhi_met_tau1", "ROOT::VecOps::DeltaPhi(metphi, phi_1)*1")
+        # rdf = rdf.Define("deltaPhi_met_tau2", "ROOT::VecOps::DeltaPhi(metphi, phi_2)*1")
+        rdf = rdf.Redefine("fj_Xbb_pt", "(abs(fj_Xbb_eta)<=2.5) ? fj_Xbb_pt : -10.;")
+        rdf = rdf.Redefine("fj_Xbb_phi", "(abs(fj_Xbb_eta)<=2.5) ? fj_Xbb_phi : -10.;")
+        rdf = rdf.Redefine("fj_Xbb_msoftdrop", "(abs(fj_Xbb_eta)<=2.5) ? fj_Xbb_msoftdrop : -10.;")
+        rdf = rdf.Redefine("fj_Xbb_nsubjettiness_2over1", "(abs(fj_Xbb_eta)<=2.5) ? fj_Xbb_nsubjettiness_2over1 : -10.;")
+        rdf = rdf.Redefine("fj_Xbb_nsubjettiness_3over2", "(abs(fj_Xbb_eta)<=2.5) ? fj_Xbb_nsubjettiness_3over2 : -10.;")
+        rdf = rdf.Redefine("fj_Xbb_mass", "(abs(fj_Xbb_eta)<=2.5) ? fj_Xbb_mass : -10.;")
+        rdf = rdf.Redefine("fj_Xbb_eta", "(abs(fj_Xbb_eta)<=2.5) ? fj_Xbb_eta : -10.;")
 
         # splitting data frame based on the tau origin (genuine, jet fake, lepton fake)
         for tau_gen_mode in config["processes"][process]["tau_gen_modes"]:
@@ -182,6 +194,14 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
                 tmp_rdf = filters.tau_origin_split(
                     rdf=tmp_rdf, channel=config["channel"], tau_gen_mode=tau_gen_mode
                 )
+            
+            # introducing some preliminary balancing by reducing event numbers in larger samples
+            if process in ["XToYHTo2Tau2B", "XToYHTo2B2Tau"]:
+                if tmp_rdf.Count().GetValue() > 2000:
+                    tmp_rdf = tmp_rdf.Range(0, 2000, 1)
+            else:
+                if tmp_rdf.Count().GetValue() > 100000:
+                    tmp_rdf = tmp_rdf.Range(0, 100000, 1)
 
             # redirecting C++ stdout for Report() to python stdout
             out = StringIO()

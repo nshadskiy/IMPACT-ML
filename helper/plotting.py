@@ -97,7 +97,7 @@ def loss(network: Network) -> None:
 
 
 def multiclass_nodes(network: Network) -> None:
-    for comb in network.data.mass_combinations:
+    for comb in network.data.plot_mass_combinations:
         for cl in network.data.classes:
             node = network.data.label_dict[cl]
             node_pred = (
@@ -166,7 +166,7 @@ def multiclass_nodes(network: Network) -> None:
 
 
 def multiclass_classes(network: Network) -> None:
-    for comb in network.data.mass_combinations:
+    for comb in network.data.plot_mass_combinations:
         class_idx = np.argmax(
             network.prediction[f"massX_{comb['massX']}_massY_{comb['massY']}"]
             .cpu()
@@ -284,7 +284,7 @@ def multiclass_classes(network: Network) -> None:
 
 
 def confusion(network: Network) -> None:
-    for comb in network.data.mass_combinations:
+    for comb in network.data.plot_mass_combinations:
         class_idx = np.argmax(
             network.prediction[f"massX_{comb['massX']}_massY_{comb['massY']}"]
             .cpu()
@@ -292,7 +292,7 @@ def confusion(network: Network) -> None:
             axis=1,
         )
 
-        cm = confusion_matrix(
+        cm_eff = confusion_matrix(
             y_true=network.y_test[f"massX_{comb['massX']}_massY_{comb['massY']}"]
             .cpu()
             .numpy(),
@@ -300,25 +300,25 @@ def confusion(network: Network) -> None:
             labels=np.array(list(network.data.label_dict.values())),
             normalize="true",
         )
-        cm = np.round(cm, 2)
-        log.info(f"Confusion matrix: {cm}")
+        cm_eff = np.round(cm_eff, 2)
+        log.info(f"Confusion matrix (efficiency): {cm_eff}")
 
-        cm_plot = ConfusionMatrixDisplay(
-            confusion_matrix=cm, display_labels=network.data.classes
+        cm_eff_plot = ConfusionMatrixDisplay(
+            confusion_matrix=cm_eff, display_labels=network.data.classes
         )
         fig, ax = plt.subplots(figsize=(10, 10))
-        cm_plot.plot(ax=ax, xticks_rotation=65, colorbar=False)
+        cm_eff_plot.plot(ax=ax, xticks_rotation=65, colorbar=False)
         plt.tight_layout()
 
         plt.savefig(
             network.save_path
             + f"/massX_{comb['massX']}_massY_{comb['massY']}"
-            + "/confusion_matrix.pdf"
+            + "/confusion_matrix_eff.pdf"
         )
         plt.savefig(
             network.save_path
             + f"/massX_{comb['massX']}_massY_{comb['massY']}"
-            + "/confusion_matrix.png"
+            + "/confusion_matrix_eff.png"
         )
         plt.close()
 
@@ -327,5 +327,43 @@ def confusion(network: Network) -> None:
             "save confusion to "
             + network.save_path
             + f"/massX_{comb['massX']}_massY_{comb['massY']}"
-            + "/confusion_matrix.pdf"
+            + "/confusion_matrix_eff.pdf"
+        )
+        
+        cm_pur = confusion_matrix(
+            y_true=network.y_test[f"massX_{comb['massX']}_massY_{comb['massY']}"]
+            .cpu()
+            .numpy(),
+            y_pred=class_idx,
+            labels=np.array(list(network.data.label_dict.values())),
+            normalize="pred",
+        )
+        cm_pur = np.round(cm_pur, 2)
+        log.info(f"Confusion matrix (purity): {cm_pur}")
+
+        cm_pur_plot = ConfusionMatrixDisplay(
+            confusion_matrix=cm_pur, display_labels=network.data.classes
+        )
+        fig, ax = plt.subplots(figsize=(10, 10))
+        cm_pur_plot.plot(ax=ax, xticks_rotation=65, colorbar=False)
+        plt.tight_layout()
+
+        plt.savefig(
+            network.save_path
+            + f"/massX_{comb['massX']}_massY_{comb['massY']}"
+            + "/confusion_matrix_pur.pdf"
+        )
+        plt.savefig(
+            network.save_path
+            + f"/massX_{comb['massX']}_massY_{comb['massY']}"
+            + "/confusion_matrix_pur.png"
+        )
+        plt.close()
+
+        log.info("-" * 50)
+        log.info(
+            "save confusion to "
+            + network.save_path
+            + f"/massX_{comb['massX']}_massY_{comb['massY']}"
+            + "/confusion_matrix_pur.pdf"
         )
