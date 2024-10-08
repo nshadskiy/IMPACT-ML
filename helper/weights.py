@@ -142,6 +142,21 @@ def apply_btag_weight(rdf: Any) -> Any:
     return rdf
 
 
+def apply_pNet_weight(rdf: Any) -> Any:
+    """
+    Function to apply the particleNet scale factor.
+
+    Args:
+        rdf: root DataFrame object
+
+    Return:
+        root DataFrame object with the applied weight
+    """
+    rdf = rdf.Redefine("weight", "weight * ((fj_Xbb_particleNet_XbbvsQCD>=0.6) * pNet_Xbb_weight + (fj_Xbb_particleNet_XbbvsQCD<0.6))")
+
+    return rdf
+
+
 def apply_boostedtau_btag_weight(rdf: Any) -> Any:
     """
     This function takes a b-tagger weight from the ntuples and calculates the yield correction factor
@@ -180,6 +195,21 @@ def apply_boostedtau_btag_weight(rdf: Any) -> Any:
 
     # applying the b-tagging SFs
     rdf = rdf.Redefine("weight", "weight*{}".format(btag_wgt))
+
+    return rdf
+
+
+def apply_boostedtau_pNet_weight(rdf: Any) -> Any:
+    """
+    Function to apply the particleNet scale factor.
+
+    Args:
+        rdf: root DataFrame object
+
+    Return:
+        root DataFrame object with the applied weight
+    """
+    rdf = rdf.Redefine("weight", "weight * ((fj_Xbb_particleNet_XbbvsQCD_boosted>=0.6) * pNet_Xbb_weight_boosted + (fj_Xbb_particleNet_XbbvsQCD_boosted<0.6))")
 
     return rdf
 

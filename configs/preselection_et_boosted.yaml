@@ -1,86 +1,81 @@
 # This is an example config containing information for the preselection
 
-ntuple_path: "root://cmsxrootd-kit-disk.gridka.de//store/user/nshadskiy/CROWN/ntuples/02_2024_nmssm_v4/CROWNRun"
-friends: ["fake_factors_v1","mass_fits_v2"]
+ntuple_path: "root://cmsdcache-kit-disk.gridka.de//store/user/nshadskiy/CROWN/ntuples/nmssm_all_systs_05_2024_v2/CROWNRun"
+friends: ["fake_factors_v5","kinfit_boosted_v1","fastmtt_v2"]
 era: "2018"
 channel: "et"
 tree: "ntuple"
-event_split: "odd"
+event_split: "even"
 
-output_path: "/ceph/nshadskiy/nmssm_ml/02_2024_v2_boosted"
+output_path: "/ceph/nshadskiy/nmssm_ml/08_2024_v1_boosted_lowmass"
 
 processes:
-    HToTauTau:
-        tau_gen_modes:
-            - "all"
-        samples:
-            - "GluGluHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "VBFHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    # HToTauTau:
+    #     tau_gen_modes:
+    #         - "all"
+    #     samples:
+    #         - "GluGluHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "VBFHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "ZHToTauTau_M125_CP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "WminusHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "WplusHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
 
-    HToBB:
-        tau_gen_modes:
-            - "all"
-        samples:
-            - "GluGluHToBB_M-125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "VBFHToBB_M-125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    # HToBB:
+    #     tau_gen_modes:
+    #         - "all"
+    #     samples:
+    #         - "GluGluHToBB_M-125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "VBFHToBB_M-125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "ZH_HToBB_ZToLL_M-125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
 
-    VH:
-        tau_gen_modes:
-            - "all"
-        samples:
-            - "ZHToTauTau_M125_CP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            # - "ZH_HToBB_ZToLL_M-125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "WminusHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "WplusHToTauTau_M125_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    # DYjets:
+    #     tau_gen_modes:
+    #         - "L"
+    #         - "T"
+    #     samples:
+    #         - "DYJetsToLL_LHEFilterPtZ-0To50_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "DYJetsToLL_LHEFilterPtZ-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "DYJetsToLL_LHEFilterPtZ-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "DYJetsToLL_LHEFilterPtZ-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "DYJetsToLL_LHEFilterPtZ-400To650_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "DYJetsToLL_LHEFilterPtZ-650ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8_RunIISummer20UL18NanoAODv9-106X"
 
-    DYjets:
-        tau_gen_modes:
-            - "L"
-            - "T"
-        samples:
-            - "DYJetsToLL_M-10to50_TuneCP5_13TeV-madgraphMLM-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "DY1JetsToLL_M-50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "DY2JetsToLL_M-50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "DY3JetsToLL_M-50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "DY4JetsToLL_M-50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    # diboson:
+    #     tau_gen_modes:
+    #         - "L"
+    #         - "T"
+    #     samples:
+    #         - "ZZ_TuneCP5_13TeV-pythia8_RunIISummer20UL18NanoAODv9-106X" 
+    #         - "WW_TuneCP5_13TeV-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "WZ_TuneCP5_13TeV-pythia8_RunIISummer20UL18NanoAODv9-106X"
 
-    diboson:
-        tau_gen_modes:
-            - "L"
-            - "T"
-        samples:
-            - "ZZ_TuneCP5_13TeV-pythia8_RunIISummer20UL18NanoAODv9-106X" 
-            - "WW_TuneCP5_13TeV-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "WZ_TuneCP5_13TeV-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    # ttbar:
+    #     tau_gen_modes:
+    #         - "L"
+    #         - "T"
+    #     samples:
+    #         - "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "TTToHadronic_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
 
-    ttbar:
-        tau_gen_modes:
-            - "L"
-            - "T"
-        samples:
-            - "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "TTToHadronic_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    # ST:
+    #     tau_gen_modes:
+    #         - "L"
+    #         - "T"
+    #     samples:
+    #         - "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
+    #         - "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
 
-    ST:
-        tau_gen_modes:
-            - "L"
-            - "T"
-        samples:
-            - "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-            - "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-
-    tau_fakes:
-        tau_gen_modes:
-            - "all"
-        samples:
-            - "EGamma_Run2018A-UL2018"
-            - "EGamma_Run2018B-UL2018"
-            - "EGamma_Run2018C-UL2018"
-            - "EGamma_Run2018D-UL2018"
+    # tau_fakes:
+    #     tau_gen_modes:
+    #         - "all"
+    #     samples:
+    #         - "EGamma_Run2018A-UL2018"
+    #         - "EGamma_Run2018B-UL2018"
+    #         - "EGamma_Run2018C-UL2018"
+    #         - "EGamma_Run2018D-UL2018"
 
     XToYHTo2Tau2B:
         tau_gen_modes:
@@ -100,37 +95,40 @@ general_event_selection:
     had_tau_decay_mode: "(boosted_tau_decaymode_2 == 0) || (boosted_tau_decaymode_2 == 1) || (boosted_tau_decaymode_2 == 10)"
     had_tau_id_anti_ele: "id_boostedtau_antiEle_Loose_2 > 0.5"
     # had_tau_id_anti_mu: "id_boostedtau_antiMu_Loose_2 > 0.5"
-    single_trigger: "(((trg_single_ele115_boosted > 0.5) && (boosted_pt_1 >= 120)) || ((trg_single_ele35_boosted > 0.5) && (boosted_iso_1 < 0.3) && (boosted_pt_1 > 38) && (boosted_pt_1 < 120)))"
+    single_trigger: "(((trg_single_ele115_boosted > 0.5 || trg_single_photon200_boosted > 0.5) && (boosted_pt_1 >= 120)) || ((trg_single_ele32_boosted > 0.5) && (boosted_iso_1 < 0.3) && (boosted_pt_1 > 33) && (boosted_pt_1 < 120)))"
     tau_pair_sign: "(boosted_q_1*boosted_q_2) < 0" 
     no_extra_lep: "(extramuon_veto < 0.5) && (boosted_extraelec_veto < 0.5) && (dilepton_veto < 0.5)"
-    good_tautau_pair: "(boosted_deltaR_ditaupair<=0.8)"
+    good_tautau_pair: "(boosted_deltaR_ditaupair<=0.8) && (boosted_deltaR_ditaupair >= 0.1)"
 
 special_event_selection:
     had_boostedtau_id_iso: ["id_boostedtau_iso_Loose_2 > 0.5", "id_boostedtau_iso_Loose_2 < 0.5"]
-    good_bb_pair: "((bpair_pt_1_boosted>=20 && bpair_pt_2_boosted>=20 && nbtag_boosted>=1 && abs(bpair_eta_2_boosted)<=2.5) || (fj_Xbb_particleNet_XbbvsQCD_boosted>=0.6 && abs(fj_Xbb_eta_boosted)<=2.5 && fj_Xbb_pt_boosted>=200))"
+    good_bb_pair: "(bpair_pt_1_boosted>=20 && bpair_pt_2_boosted>=20 && nbtag_boosted>=1 && bpair_btag_value_2_boosted>0.049 && abs(bpair_eta_2_boosted)<=2.5&&fj_Xbb_pt_boosted<0) || (fj_Xbb_particleNet_XbbvsQCD_boosted>=0.6&&abs(fj_Xbb_eta_boosted)<=2.5&&fj_Xbb_pt_boosted>=250&&fj_Xbb_msoftdrop_boosted>=30&&bpair_pt_1_boosted<0) || (bpair_pt_1_boosted>=20 && bpair_pt_2_boosted>=20 && nbtag_boosted>=1 && bpair_btag_value_2_boosted>0.049 && abs(bpair_eta_2_boosted)<=2.5&&fj_Xbb_particleNet_XbbvsQCD_boosted>=0.6&&abs(fj_Xbb_eta_boosted)<=2.5&&fj_Xbb_pt_boosted>=250&&fj_Xbb_msoftdrop_boosted>=30)"
 
 mc_weights:
     # general weights: string is passed directly as weight
-    # pileup: "puweight"
+    pileup: "puweight"
     lep_iso: "iso_wgt_ele_boosted_1"
     lep_id: "id_wgt_ele_boosted_1"
-    had_tau_id_vs_ele: (boosted_gen_match_2==5) * ((id_boostedtau_antiEle_Loose_2>0.5)*id_wgt_boostedtau_antiEle_Loose_2 + (id_boostedtau_antiEle_Loose_2<0.5)) + (boosted_gen_match_2!=5)
-    # had_tau_id_vs_mu: (boosted_gen_match_2==5) * ((id_boostedtau_antiMu_Loose_2>0.5)*id_wgt_boostedtau_antiMu_Loose_2 + (id_boostedtau_antiMu_Loose_2<0.5)) + (boosted_gen_match_2!=5)
-    # single_trigger: ""
+    had_tau_id_vs_ele: "(id_boostedtau_antiEle_Loose_2>0.5)*id_wgt_boostedtau_antiEle_Loose_2 + (id_boostedtau_antiEle_Loose_2<0.5)"
+    # had_tau_id_vs_mu: "(id_boostedtau_antiMu_Loose_2>0.5)*id_wgt_boostedtau_antiMu_Loose_2 + (id_boostedtau_antiMu_Loose_2<0.5)"
+    single_trigger: "trg_wgt_single_ele_boosted"
 
     # special weights: these are not generally applied, e.g. only for a specific process or era
     # here the string is a needed information to apply the weight -> see corresponding functions
-    # generator: "stitching"
+    # generator:
+        # stitching:
+            # - "DYjets"
+            # - "Wjets"
     # lumi: ""
-    Z_pt_reweighting: "ZPtMassReweightWeight"
+    # Z_pt_reweighting: "ZPtMassReweightWeight"
     Top_pt_reweighting: "topPtReweightWeight"
 
-masses_X: [240,280,300,320,360,400,450,500,550,600,650,700,750,800,850,900,950,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2200,2400,2500,2600,2800,3000,3500,4000]
-masses_Y: [60,70,80,90,100,125,150,250,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1600,1800,2000,2200,2400,2500,2600,2800]
+# masses_X: [240,280,300,320,360,400,450,500,550,600,650,700,750,800,850,900,950,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2200,2400,2500,2600,2800,3000,3500,4000]
+# masses_Y: [60,70,80,90,100,125,150,250,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1600,1800,2000,2200,2400,2500,2600,2800]
 # masses_X: [280, 450, 800, 1200, 2000, 4000]
 # masses_Y: [70, 125, 250, 500, 1000, 1600, 2800]
-# masses_X: [280]
-# masses_Y: [70]
+masses_X: [240,280,300,320,360,400,450,500,550,600,650,700,750,800]
+masses_Y: [60,70,80,90,100,125,150,250,300,400,500,600]
 
 output_feature:
     - "weight"
@@ -168,11 +166,11 @@ output_feature:
     - "fj_Xbb_phi_boosted"
     - "fj_Xbb_msoftdrop_boosted"
     - "fj_Xbb_nsubjettiness_2over1_boosted"
-    - "fj_Xbb_nsubjettiness_3over2_boosted"
+    # - "fj_Xbb_nsubjettiness_3over2_boosted"
     - "met_boosted"
     - "metphi_boosted"
-    - "boosted_mass_tautaubb"
-    - "boosted_pt_tautaubb"
+    # - "boosted_mass_tautaubb"
+    # - "boosted_pt_tautaubb"
     - "kinfit_mX_boosted"
     - "kinfit_mY_boosted"
     - "kinfit_chi2_boosted"

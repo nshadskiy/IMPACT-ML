@@ -96,7 +96,7 @@ data = Data.Data(
 
 data.load_data(sample_path=options.inputdata, era=options.era, channel=options.channel, shuffle_seed=None, val_fraction=0.25)
 
-data.transform(type="standard", one_hot=config["one_hot_parametrization"])
+data.transform(type="standard", index_parametrization=config["index_parametrization"])
 data.shuffling(seed=None)
 # data.split_data(val_fraction=0.25)
 data.prepare_for_training()
@@ -117,8 +117,12 @@ if not os.path.exists(workdir + "/workdir/" + savedir):
     
 with open(workdir + "/workdir/" + savedir + f"/{options.channel}_feature_transformation_{options.event_split}.json", "w") as file_transform:
     json.dump(data.transform_feature_dict, file_transform, indent=4)
-with open(workdir + "/workdir/" + savedir + f"/{options.channel}_mass_transformation.json", "w") as file_transform:
-    json.dump(data.mass_indizes, file_transform, indent=4)
+if config["index_parametrization"]:
+    with open(workdir + "/workdir/" + savedir + f"/{options.channel}_mass_transformation.json", "w") as file_transform:
+        json.dump(data.mass_indizes, file_transform, indent=4)
+else:
+    with open(workdir + "/workdir/" + savedir + f"/{options.channel}_mass_transformation_{options.event_split}.json", "w") as file_transform:
+        json.dump(data.transform_param_feature_dict, file_transform, indent=4)
 
 for comb in data.plot_mass_combinations:
     if not os.path.exists(

@@ -77,13 +77,13 @@ class Network:
 
         self.best_model_dict = self.model.state_dict()
 
-    def weightedBCELoss(self, y_pred, y_true, weights=None):
-        if weights is not None:
-            loss_func = nn.BCELoss(weight=weights, reduction="none")
-        else:
-            loss_func = nn.BCELoss(reduction="none")
+    # def weightedBCELoss(self, y_pred, y_true, weights=None):
+    #     if weights is not None:
+    #         loss_func = nn.BCELoss(weight=weights, reduction="none")
+    #     else:
+    #         loss_func = nn.BCELoss(reduction="none")
 
-        return loss_func(y_pred, y_true)
+    #     return loss_func(y_pred, y_true)
 
     def weightedNLLLoss(self, y_pred, y_true, weights=None):
         loss_func = nn.NLLLoss(reduction="none")
@@ -107,11 +107,11 @@ class Network:
         self.batch_size = self.config["batch_size"]
 
         # transformation of pandas data frames to torch tensors and sending it to a device (e.g. gpu)
-        self.x_train = torch.tensor(self.data.df_train.tolist()).to(self.device)
+        # self.x_train = torch.tensor(self.data.df_train.tolist()).to(self.device)
         self.x_train_weights = torch.tensor(self.data.df_train_weights.tolist()).to(
             self.device
         )
-        self.y_train = torch.tensor(self.data.df_train_labels.tolist()).to(self.device)
+        self.y_train = torch.tensor(self.data.df_train_labels.values.tolist()).to(self.device)
 
         self.x_val = torch.tensor(self.data.df_val.tolist()).to(self.device)
         self.x_val_weights = torch.tensor(self.data.df_val_weights.tolist()).to(
@@ -126,12 +126,25 @@ class Network:
         best_val_loss = 999999.0
         self.best_epoch = -1.0
 
+        mask = ~(self.data.df_train_labels.isin(self.data.signal_labels))
+        
         for e in range(self.epochs):
+            
+            rand_masses = np.random.choice(self.data.mass_combinations, len(self.data.df_train))
+            rand_masses = np.array(
+                [[int(m["massX"]), int(m["massY"])] for m in rand_masses]
+            )
+            # df_test[param] = (int(comb[param]) - self.data.transform_param_feature_dict[param]["mean"]) / self.data.transform_param_feature_dict[param]["std"]
+            self.data.df_train.loc[mask, "massX"] = (rand_masses[mask, 0] - self.data.transform_param_feature_dict["massX"]["mean"]) / self.data.transform_param_feature_dict["massX"]["std"]
+            self.data.df_train.loc[mask, "massY"] = (rand_masses[mask, 1]  - self.data.transform_param_feature_dict["massY"]["mean"]) / self.data.transform_param_feature_dict["massY"]["std"]
+            
+            self.x_train = torch.tensor(self.data.df_train.values.tolist()).to(self.device)
+            
             # set model to training mode
             self.model.train()
             t_loss_log = []
             # loop over mini batches
-            for i in range(0, self.data.df_train.shape[0], self.batch_size):
+            for i in range(0, self.data.df_train.values.shape[0], self.batch_size):
                 x_batch = self.x_train[i : i + self.batch_size]
                 x_batch_weights = self.x_train_weights[i : i + self.batch_size]
                 y_batch = self.y_train[i : i + self.batch_size]
@@ -276,34 +289,18 @@ class Network:
         self.pred_weights = dict()
         self.roc_auc_scores = dict()
 
-        signal_labels = list()
-        for sig in self.data.signal:
-            signal_labels.append(self.data.label_dict[sig])
+        # signal_labels = list()
+        # for sig in self.data.signal:
+        #     signal_labels.append(self.data.label_dict[sig])
 
         for comb in self.data.plot_mass_combinations:
-            idx_massX = self.data.mass_indizes["massX"][comb["massX"]]
-            idx_massY = self.data.mass_indizes["massY"][comb["massY"]]
-
-            if self.config["one_hot_parametrization"]:
-                # remove all signal events with wrong mass points
-                mask = ~((self.data.df_test_labels.isin(signal_labels)) & ~(
-                    (self.data.df_test[f"massX_{idx_massX}"].astype(int))
-                    & (self.data.df_test[f"massY_{idx_massY}"].astype(int))
-                ))
-                df_test = self.data.df_test[mask].copy(deep=True)
-                df_test_labels = self.data.df_test_labels[mask].copy(deep=True)
-                # change all mass points to the same values
-                for param in self.data.param_features:
-                    if param == f"massX_{idx_massX}":
-                        df_test[param] = 1
-                    elif param == f"massY_{idx_massY}":
-                        df_test[param] = 1
-                    else:
-                        df_test[param] = 0
-            else:
+            if self.config["index_parametrization"]:
+                idx_massX = self.data.mass_indizes["massX"][comb["massX"]]
+                idx_massY = self.data.mass_indizes["massY"][comb["massY"]]
+            
                 # remove all signal events with wrong mass points
                 mask = ~(
-                    (self.data.df_test_labels.isin(signal_labels))
+                    (self.data.df_test_labels.isin(self.data.signal_labels))
                     & ~(
                         (self.data.df_test["massX"].isin([idx_massX]))
                         & (self.data.df_test["massY"].isin([idx_massY]))
@@ -313,7 +310,21 @@ class Network:
                 df_test_labels = self.data.df_test_labels[mask].copy(deep=True)
                 # change all mass points to the same values
                 for param in self.data.param_features:
-                    df_test[param] = self.data.mass_indizes[param][comb[param]] # - self.data.transform_feature_dict[param]["mean"] / self.data.transform_feature_dict[param]["std"]
+                    df_test[param] = self.data.mass_indizes[param][comb[param]]
+            else:
+                # remove all signal events with wrong mass points
+                mask = ~(
+                    (self.data.df_test_labels.isin(self.data.signal_labels))
+                    & ~(
+                        (self.data.df_test_true_masses["true_massX"].isin([int(comb["massX"])]))
+                        & (self.data.df_test_true_masses["true_massY"].isin([int(comb["massY"])]))
+                    )
+                )
+                df_test = self.data.df_test[mask].copy(deep=True)
+                df_test_labels = self.data.df_test_labels[mask].copy(deep=True)
+                # change all mass points to the same values
+                for param in self.data.param_features:
+                    df_test[param] = (int(comb[param]) - self.data.transform_param_feature_dict[param]["mean"]) / self.data.transform_param_feature_dict[param]["std"]
 
             self.x_test[f"massX_{comb['massX']}_massY_{comb['massY']}"] = torch.tensor(
                 df_test.values.tolist()

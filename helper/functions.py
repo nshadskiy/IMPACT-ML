@@ -7,7 +7,6 @@ import os
 import glob
 import logging
 from typing import List, Dict, Union, Any
-import numpy as np
 
 import ROOT
 from XRootD import client
@@ -115,7 +114,7 @@ def check_inputfiles(path: str, process: str, tree: str) -> List[str]:
     """
     log = logging.getLogger(f"preselection.{process}")
 
-    fsname = "root://cmsxrootd-kit-disk.gridka.de/"
+    fsname = "root://cmsdcache-kit-disk.gridka.de/"
     xrdclient = client.FileSystem(fsname)
     status, listing = xrdclient.dirlist(path.replace(fsname, ""))
 
@@ -148,6 +147,8 @@ def check_for_empty_tree(file_path: str, tree: str) -> bool:
     """
     f = ROOT.TFile.Open(file_path)
     t = f.Get(tree)
+    if not isinstance(t, ROOT.TTree):
+        return True
 
     return bool(t.GetEntries() == 0)
 

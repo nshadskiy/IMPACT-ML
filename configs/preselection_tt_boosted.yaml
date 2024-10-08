@@ -1,13 +1,13 @@
 # This is an example config containing information for the preselection
 
 ntuple_path: "root://cmsdcache-kit-disk.gridka.de//store/user/nshadskiy/CROWN/ntuples/nmssm_all_systs_05_2024_v2/CROWNRun"
-friends: ["fake_factors_v5","kinfit_resolved_v1","fastmtt_v2"]
+friends: ["fake_factors_v5","kinfit_boosted_v1","fastmtt_v2"]
 era: "2018"
 channel: "tt"
 tree: "ntuple"
 event_split: "odd"
 
-output_path: "/ceph/nshadskiy/nmssm_ml/08_2024_v4_lowmass"
+output_path: "/ceph/nshadskiy/nmssm_ml/08_2024_v1_boosted_lowmass"
 
 processes:
     # HToTauTau:
@@ -67,24 +67,15 @@ processes:
     #         - "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8_RunIISummer20UL18NanoAODv9-106X"
     #         - "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
     #         - "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8_RunIISummer20UL18NanoAODv9-106X"
-    
-    # embedding:
-    #     tau_gen_modes:
-    #         - "all"
-    #     samples:
-    #         - "TauEmbedding-TauTauFinalState_Run2018A-UL2018"
-    #         - "TauEmbedding-TauTauFinalState_Run2018B-UL2018"
-    #         - "TauEmbedding-TauTauFinalState_Run2018C-UL2018"
-    #         - "TauEmbedding-TauTauFinalState_Run2018D-UL2018"
 
     # tau_fakes:
     #     tau_gen_modes:
     #         - "all"
     #     samples:
-    #         - "Tau_Run2018A-UL2018_GT36"
-    #         - "Tau_Run2018B-UL2018_GT36"
-    #         - "Tau_Run2018C-UL2018_GT36"
-    #         - "Tau_Run2018D-UL2018_GT36"
+    #         - "JetHT_Run2018A-UL2018"
+    #         - "JetHT_Run2018B-UL2018"
+    #         - "JetHT_Run2018C-UL2018"
+    #         - "JetHT_Run2018D-UL2018"
 
     XToYHTo2Tau2B:
         tau_gen_modes:
@@ -99,30 +90,29 @@ processes:
             - "NMSSM_XToYHTo2B2Tau_MX-massX_MY-massY_TuneCP5_13TeV-madgraph-pythia8_RunIISummer20UL18NanoAODv9-106X"
 
 general_event_selection:
-    had_tau_pt: "(pt_1 > 40) && (pt_2 > 40)"
-    had_tau_eta: "(abs(eta_1) < 2.3) && (abs(eta_2) < 2.3)"
-    had_tau_decay_mode_1: "(tau_decaymode_1 == 0) || (tau_decaymode_1 == 1) || (tau_decaymode_1 == 10) || (tau_decaymode_1 == 11)"
-    had_tau_decay_mode_2: "(tau_decaymode_2 == 0) || (tau_decaymode_2 == 1) || (tau_decaymode_2 == 10) || (tau_decaymode_2 == 11)"
-    had_tau_id_vs_ele: "(id_tau_vsEle_VVLoose_1 > 0.5) && (id_tau_vsEle_VVLoose_2 > 0.5)"
-    had_tau_id_vs_mu: "(id_tau_vsMu_VLoose_1 > 0.5) && (id_tau_vsMu_VLoose_2 > 0.5)"
-    double_trigger: "((is_data>0.5) && ((run>=317509 && trg_double_tau35_mediumiso_hps>0.5) || (run<317509 && ((trg_double_tau35_tightiso_tightid>0.5) || (trg_double_tau40_mediumiso_tightid>0.5) || (trg_double_tau40_tightiso>0.5))))) || (is_data<0.5 && trg_double_tau35_mediumiso_hps>0.5)"
-    tau_pair_sign: "(q_1*q_2) < 0" 
+    had_tau_pt: "(boosted_pt_1 > 40) && (boosted_pt_2 > 40)"
+    had_tau_eta: "(abs(boosted_eta_1) < 2.3) && (abs(boosted_eta_2) < 2.3)"
+    had_tau_decay_mode_1: "(boosted_tau_decaymode_1 == 0) || (boosted_tau_decaymode_1 == 1) || (boosted_tau_decaymode_1 == 10)"
+    had_tau_decay_mode_2: "(boosted_tau_decaymode_2 == 0) || (boosted_tau_decaymode_2 == 1) || (boosted_tau_decaymode_2 == 10)"
+    # had_tau_id_anti_ele: "(id_boostedtau_antiEle_VLoose_1 > 0.5) && (id_boostedtau_antiEle_VLoose_2 > 0.5)"
+    # had_tau_id_anti_mu: "(id_boostedtau_antiMu_Loose_1 > 0.5) && (id_boostedtau_antiMu_Loose_2 > 0.5)"
+    single_trigger: "(trg_ak8pfjet400_trimmass30 > 0.5) || (trg_pfht500_pfmet100_pfmht100_idtight > 0.5)"
+    tau_pair_sign: "(boosted_q_1*boosted_q_2) < 0" 
     no_extra_lep: "(extramuon_veto < 0.5) && (extraelec_veto < 0.5)"
-    boosted_tau_veto: "(boosted_deltaR_ditaupair > 0.8) || (boosted_deltaR_ditaupair < 0.1)"
+    good_tautau_pair: "(boosted_deltaR_ditaupair<=0.8) && (boosted_deltaR_ditaupair >= 0.1)"
 
 special_event_selection:
-    had_tau_id_vs_jet: ["(id_tau_vsJet_Medium_1 > 0.5) && (id_tau_vsJet_Medium_2 > 0.5)", "((id_tau_vsJet_VVVLoose_1 > 0.5) && (id_tau_vsJet_Medium_1 < 0.5) && (id_tau_vsJet_Medium_2 > 0.5)) || ((id_tau_vsJet_VVVLoose_2 > 0.5) && (id_tau_vsJet_Medium_2 < 0.5) && (id_tau_vsJet_Medium_1 > 0.5))"]
-    # had_tau_id_vs_jet_2: ["id_tau_vsJet_Medium_2 > 0.5", "(id_tau_vsJet_VVVLoose_2 > 0.5) && (id_tau_vsJet_Medium_2 < 0.5)"]
-    good_bb_pair: "(bpair_pt_1>=20 && bpair_pt_2>=20 && nbtag>=1 && bpair_btag_value_2>0.049 && abs(bpair_eta_2)<=2.5&&fj_Xbb_pt<0) || (fj_Xbb_particleNet_XbbvsQCD>=0.6&&abs(fj_Xbb_eta)<=2.5&&fj_Xbb_pt>=250&&fj_Xbb_msoftdrop>=30&&bpair_pt_1<0) || (bpair_pt_1>=20 && bpair_pt_2>=20 && nbtag>=1 && bpair_btag_value_2>0.049 && abs(bpair_eta_2)<=2.5&&fj_Xbb_particleNet_XbbvsQCD>=0.6&&abs(fj_Xbb_eta)<=2.5&&fj_Xbb_pt>=250&&fj_Xbb_msoftdrop>=30)"
+    had_tau_id_vs_jet: ["(id_boostedtau_iso_Loose_1 > 0.5) && (id_boostedtau_iso_Loose_2 > 0.5)", "((id_boostedtau_iso_Loose_1 < 0.5) && (id_boostedtau_iso_Loose_2 > 0.5)) || ((id_boostedtau_iso_Loose_2 < 0.5) && (id_boostedtau_iso_Loose_1 > 0.5))"]
+    good_bb_pair: "(bpair_pt_1_boosted>=20 && bpair_pt_2_boosted>=20 && nbtag_boosted>=1 && bpair_btag_value_2_boosted>0.049 && abs(bpair_eta_2_boosted)<=2.5&&fj_Xbb_pt_boosted<0) || (fj_Xbb_particleNet_XbbvsQCD_boosted>=0.6&&abs(fj_Xbb_eta_boosted)<=2.5&&fj_Xbb_pt_boosted>=250&&fj_Xbb_msoftdrop_boosted>=30&&bpair_pt_1_boosted<0) || (bpair_pt_1_boosted>=20 && bpair_pt_2_boosted>=20 && nbtag_boosted>=1 && bpair_btag_value_2_boosted>0.049 && abs(bpair_eta_2_boosted)<=2.5&&fj_Xbb_particleNet_XbbvsQCD_boosted>=0.6&&abs(fj_Xbb_eta_boosted)<=2.5&&fj_Xbb_pt_boosted>=250&&fj_Xbb_msoftdrop_boosted>=30)"
 
 mc_weights:
     # general weights: string is passed directly as weight
     pileup: "puweight"
-    had_tau_id_vs_ele_1: "(id_tau_vsEle_VVLoose_1>0.5)*id_wgt_tau_vsEle_VVLoose_1 + (id_tau_vsEle_VVLoose_1<0.5)"
-    had_tau_id_vs_ele_2: "(id_tau_vsEle_VVLoose_2>0.5)*id_wgt_tau_vsEle_VVLoose_2 + (id_tau_vsEle_VVLoose_2<0.5)"
-    had_tau_id_vs_mu_1: "(id_tau_vsMu_VLoose_1>0.5)*id_wgt_tau_vsMu_VLoose_1 + (id_tau_vsMu_VLoose_1<0.5)"
-    had_tau_id_vs_mu_2: "(id_tau_vsMu_VLoose_2>0.5)*id_wgt_tau_vsMu_VLoose_2 + (id_tau_vsMu_VLoose_2<0.5)"
-    double_trigger: "trg_wgt_double_tau_1 * trg_wgt_double_tau_2"
+    # had_tau_id_vs_ele_1: "(id_boostedtau_antiEle_VLoose_1>0.5)*id_wgt_boostedtau_antiEle_VLoose_1 + (id_boostedtau_antiEle_VLoose_1<0.5)"
+    # had_tau_id_vs_mu_1: "(id_boostedtau_antiMu_Loose_1>0.5)*id_wgt_boostedtau_antiMu_Loose_1 + (id_boostedtau_antiMu_Loose_1<0.5)"
+    # had_tau_id_vs_ele_2: "(id_boostedtau_antiEle_VLoose_2>0.5)*id_wgt_boostedtau_antiEle_VLoose_2 + (id_boostedtau_antiEle_VLoose_2<0.5)"
+    # had_tau_id_vs_mu_2: "(id_boostedtau_antiMu_Loose_2>0.5)*id_wgt_boostedtau_antiMu_Loose_2 + (id_boostedtau_antiMu_Loose_2<0.5)"
+    trigger: "(trg_wgt_fatjet * (trg_ak8pfjet400_trimmass30 > 0.5) + (trg_ak8pfjet400_trimmass30 < 0.5))"
     
     # special weights: these are not generally applied, e.g. only for a specific process or era
     # here the string is a needed information to apply the weight -> see corresponding functions
@@ -133,11 +123,6 @@ mc_weights:
     # lumi: ""
     # Z_pt_reweighting: "ZPtMassReweightWeight"
     Top_pt_reweighting: "topPtReweightWeight"
-
-emb_weights:
-    # general weights (for embedding): string is passed directly as weight
-    generator: "emb_idsel_wgt_1 * emb_idsel_wgt_2 * emb_triggersel_wgt" # emb_genweight
-    double_trigger: "trg_wgt_double_tau_1 * trg_wgt_double_tau_2"
 
 # masses_X: [240,280,300,320,360,400,450,500,550,600,650,700,750,800,850,900,950,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000,2200,2400,2500,2600,2800,3000,3500,4000]
 # masses_Y: [60,70,80,90,100,125,150,250,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1600,1800,2000,2200,2400,2500,2600,2800]
@@ -150,46 +135,43 @@ output_feature:
     - "weight"
     - "massX"
     - "massY"
-    - "njets"
-    - "nbtag"
-    - "nfatjets"
-    - "pt_1"
-    - "pt_2"
-    - "eta_1"
-    - "phi_1"
-    - "eta_2"
-    - "phi_2"
-    - "deltaR_ditaupair"
-    - "m_vis"
-    - "mt_1"
-    - "m_fastmtt"
-    - "pt_fastmtt"
-    - "eta_fastmtt"
-    - "phi_fastmtt"
-    - "bpair_pt_1"
-    - "bpair_eta_1"
-    - "bpair_phi_1"
-    - "bpair_btag_value_1"
-    - "bpair_pt_2"
-    - "bpair_eta_2"
-    - "bpair_phi_2"
-    - "bpair_btag_value_2"
-    - "bpair_m_inv"
-    - "bpair_deltaR"
-    - "bpair_pt_dijet"
-    - "fj_Xbb_pt"
-    - "fj_Xbb_eta"
-    - "fj_Xbb_phi"
-    - "fj_Xbb_msoftdrop"
-    - "fj_Xbb_nsubjettiness_2over1"
-    # - "fj_Xbb_nsubjettiness_3over2"
-    - "met"
-    - "metphi"
-    # - "mass_tautaubb"
-    # - "pt_tautaubb"
-    # - "jpt_1"
-    # - "jpt_2"
-    # - "mjj"
-    - "kinfit_mX"
-    - "kinfit_mY"
-    - "kinfit_chi2"
+    - "njets_boosted"
+    - "nbtag_boosted"
+    - "nfatjets_boosted"
+    - "boosted_pt_1"
+    - "boosted_pt_2"
+    - "boosted_eta_1"
+    - "boosted_phi_1"
+    - "boosted_eta_2"
+    - "boosted_phi_2"
+    - "boosted_deltaR_ditaupair"
+    - "boosted_m_vis"
+    - "boosted_mt_1"
+    - "boosted_m_fastmtt"
+    - "boosted_pt_fastmtt"
+    - "boosted_eta_fastmtt"
+    - "boosted_phi_fastmtt"
+    - "bpair_pt_1_boosted"
+    - "bpair_eta_1_boosted"
+    - "bpair_phi_1_boosted"
+    - "bpair_btag_value_1_boosted"
+    - "bpair_pt_2_boosted"
+    - "bpair_eta_2_boosted"
+    - "bpair_phi_2_boosted"
+    - "bpair_btag_value_2_boosted"
+    - "bpair_m_inv_boosted"
+    - "bpair_deltaR_boosted"
+    - "bpair_pt_dijet_boosted"
+    - "fj_Xbb_pt_boosted"
+    - "fj_Xbb_eta_boosted"
+    - "fj_Xbb_phi_boosted"
+    - "fj_Xbb_msoftdrop_boosted"
+    - "fj_Xbb_nsubjettiness_2over1_boosted"
+    # - "fj_Xbb_nsubjettiness_3over2_boosted"
+    - "met_boosted"
+    - "metphi_boosted"
+    # - "boosted_mass_tautaubb"
+    # - "boosted_pt_tautaubb"
+    - "kinfit_mX_boosted"
+    - "kinfit_mY_boosted"
+    - "kinfit_chi2_boosted"

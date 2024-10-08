@@ -19,8 +19,9 @@ classes["nmssm"]["YttHbb_boost"] = [
     "XToYHTo2Tau2B",
 ]
 
-classes["nmssm"]["genuine_tau"] = [
-    "embedding",
+classes["nmssm"]["DYjets"] = [
+    "DYjets_L",
+    "DYjets_T",
 ]
 
 classes["nmssm"]["tau_fakes"] = [
@@ -29,15 +30,16 @@ classes["nmssm"]["tau_fakes"] = [
 
 classes["nmssm"]["ttbar"] = [
     "ttbar_L",
+    "ttbar_T",
     "ST_L",
+    "ST_T",
 ]
 
 classes["nmssm"]["misc"] = [
     "diboson_L",
-    "DYjets_L",
+    "diboson_T",
     "HToBB",
     "HToTauTau",
-    "VH",
 ]
 
 # adding classes for the NMSSM di-Higgs resolved analysis
@@ -59,11 +61,9 @@ classes["nmssm_boosted"]["YttHbb_boost"] = [
     "XToYHTo2Tau2B",
 ]
 
-classes["nmssm_boosted"]["genuine_tau"] = [
-    "diboson_T",
+classes["nmssm_boosted"]["DYjets"] = [
+    "DYjets_L",
     "DYjets_T",
-    "ttbar_T",
-    "ST_T",
 ]
 
 classes["nmssm_boosted"]["tau_fakes"] = [
@@ -72,13 +72,14 @@ classes["nmssm_boosted"]["tau_fakes"] = [
 
 classes["nmssm_boosted"]["ttbar"] = [
     "ttbar_L",
+    "ttbar_T",
     "ST_L",
+    "ST_T",
 ]
 
 classes["nmssm_boosted"]["misc"] = [
     "diboson_L",
-    "DYjets_L",
+    "diboson_T",
     "HToBB",
     "HToTauTau",
-    "VH",
 ]

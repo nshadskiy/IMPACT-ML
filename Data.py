@@ -44,6 +44,7 @@ class Data:
         self.classes = class_dict.keys()
         self.file_dict = class_dict
         self.signal = config["signal"]
+        self.signal_labels = list()
         self.config = config
         self.event_split = event_split
 
@@ -113,13 +114,13 @@ class Data:
         del self.samples_train
         del self.samples_test
 
-    def transform(self, type: str, one_hot: bool) -> None:
+    def transform(self, type: str, index_parametrization: bool) -> None:
         """
         Transforms the features to a standardized range.
 
         Args:
                 type: Options are "standard" (shifts feature distributions to mu=0 and sigma=1) or "quantile" (transforms feature distributions into Normal distributions with mu=0 and sigma=1)
-                one_hot: Boolean to decide how to include the parametrization variables. True: as one hot encoded features, False: as single integer features with values from 0 in steps of 1
+                index_parametrization: Boolean to decide how to include the parametrization variables. True: as index encoded features, False: as standard transformed features
 
         Return:
                 None
@@ -128,51 +129,18 @@ class Data:
 
         self.mass_indizes = {"massX": dict(), "massY": dict()}
         if len(self.param_features) > 0:
-            nX, nY = 0, 0
-            for comb in self.mass_combinations:
-                if comb["massX"] not in self.mass_indizes["massX"]:
-                    self.mass_indizes["massX"][comb["massX"]] = nX
-                    nX += 1
-                if comb["massY"] not in self.mass_indizes["massY"]:
-                    self.mass_indizes["massY"][comb["massY"]] = nY
-                    nY += 1
-            log.info("-" * 50)
-            log.info(f"mass indizes: {self.mass_indizes}")
-
-            if one_hot:
-                tmp_param_features = list()
-                for param in self.param_features:
-                    trans_masses = [
-                        self.mass_indizes[param][str(mass)]
-                        for mass in self.df_train[param]
-                    ]
-                    n_diff_masses = np.max(trans_masses) + 1
-                    trans_masses = np.eye(n_diff_masses)[trans_masses]
-                    for n in range(n_diff_masses):
-                        self.df_train[f"{param}_{n}"] = trans_masses[:, n]
-                        tmp_param_features.append(f"{param}_{n}")
-
-                    trans_masses = [
-                        self.mass_indizes[param][str(mass)]
-                        for mass in self.df_val[param]
-                    ]
-                    n_diff_masses = np.max(trans_masses) + 1
-                    trans_masses = np.eye(n_diff_masses)[trans_masses]
-                    for n in range(n_diff_masses):
-                        self.df_val[f"{param}_{n}"] = trans_masses[:, n]
-                        
-                    trans_masses = [
-                        self.mass_indizes[param][str(mass)]
-                        for mass in self.df_test[param]
-                    ]
-                    n_diff_masses = np.max(trans_masses) + 1
-                    trans_masses = np.eye(n_diff_masses)[trans_masses]
-                    for n in range(n_diff_masses):
-                        self.df_test[f"{param}_{n}"] = trans_masses[:, n]
-
-                self.param_features = tmp_param_features
-                log.info(f"final parametrization variables: {self.param_features}")
-            else:
+            if index_parametrization:
+                nX, nY = 0, 0
+                for comb in self.mass_combinations:
+                    if comb["massX"] not in self.mass_indizes["massX"]:
+                        self.mass_indizes["massX"][comb["massX"]] = nX
+                        nX += 1
+                    if comb["massY"] not in self.mass_indizes["massY"]:
+                        self.mass_indizes["massY"][comb["massY"]] = nY
+                        nY += 1
+                log.info("-" * 50)
+                log.info(f"mass indizes: {self.mass_indizes}")
+            
                 for param in self.param_features:
                     trans_masses = [
                         self.mass_indizes[param][str(mass)]
@@ -191,10 +159,51 @@ class Data:
                         for mass in self.df_test[param]
                     ]
                     self.df_test[param] = trans_masses
+            else:
+                log.info("-" * 50)
+                log.info("Standard Transformation: parameter features")
+                
+                st_param = StandardScaler()
+                st_param.fit(self.df_train[self.param_features])
+                
+                self.transform_param_feature_dict = dict()
+                for idx, param_feature in enumerate(self.param_features):
+                    self.transform_param_feature_dict[param_feature] = {"mean": st_param.mean_[idx], "std": st_param.scale_[idx]}
+                    
+                st_param_df_train = pd.DataFrame(
+                    data=st_param.transform(self.df_train[self.param_features]),
+                    columns=self.param_features,
+                    index=self.df_train.index,
+                )
+                for param_feature in self.param_features:
+                    self.df_train["true_"+param_feature] = self.df_train[param_feature]
+                    self.df_train[param_feature] = st_param_df_train[param_feature]
+
+                st_param_df_val = pd.DataFrame(
+                    data=st_param.transform(self.df_val[self.param_features]),
+                    columns=self.param_features,
+                    index=self.df_val.index,
+                )
+                for param_feature in self.param_features:
+                    self.df_val["true_"+param_feature] = self.df_val[param_feature]
+                    self.df_val[param_feature] = st_param_df_val[param_feature]
+                    
+                st_param_df_test = pd.DataFrame(
+                    data=st_param.transform(self.df_test[self.param_features]),
+                    columns=self.param_features,
+                    index=self.df_test.index,
+                )
+                for param_feature in self.param_features:
+                    self.df_test["true_"+param_feature] = self.df_test[param_feature]
+                    self.df_test[param_feature] = st_param_df_test[param_feature]
+                    
+                del st_param_df_train
+                del st_param_df_val
+                del st_param_df_test
 
         if self.transform_type == "standard":
             log.info("-" * 50)
-            log.info("Standard Transformation")
+            log.info("Standard Transformation: input features")
             st = StandardScaler()
             st.fit(self.df_train[self.features])
             
@@ -303,20 +312,26 @@ class Data:
         # defining test dataset
         self.df_test_labels = self.df_test["label"]
         self.df_test_weights = self.df_test["weight"]
+        if not self.config["index_parametrization"]:
+            self.df_test_true_masses = self.df_test[["true_"+param for param in self.param_features]]
 
         self.df_test = self.df_test[self.features + self.param_features]
 
         # defining train dataset
         self.df_train_labels = self.df_train["label"]
         self.df_train_weights = self.df_train["weight"]
+        if not self.config["index_parametrization"]:
+            self.df_train_true_masses = self.df_train[["true_"+param for param in self.param_features]]
 
-        self.df_train = self.df_train[self.features + self.param_features].values
-        self.df_train_labels = self.df_train_labels.values
+        self.df_train = self.df_train[self.features + self.param_features]
+        self.df_train_labels = self.df_train_labels
         self.df_train_weights = self.df_train_weights.values
 
         # defining validation dataset
         self.df_val_labels = self.df_val["label"]
         self.df_val_weights = self.df_val["weight"]
+        if not self.config["index_parametrization"]:
+            self.df_val_true_masses = self.df_val[["true_"+param for param in self.param_features]]
 
         self.df_val = self.df_val[self.features + self.param_features].values
         self.df_val_labels = self.df_val_labels.values
@@ -349,16 +364,21 @@ class Data:
             tmp_file_dict = dict()
             # define a dictionary of all files in a class which is then used to load the data with uproot
             for file in self.file_dict[cl]:
-                tmp_file_dict[
-                    os.path.join(
-                        self.sample_path,
-                        "preselection",
-                        self.era,
-                        self.channel,
-                        event_ID,
-                        file + ".root",
-                    )
-                ] = "ntuple"
+                file_path = os.path.join(
+                    self.sample_path,
+                    "preselection",
+                    self.era,
+                    self.channel,
+                    event_ID,
+                    file + ".root",
+                )
+                # Check if the root file is empty
+                with uproot.open(file_path+":ntuple") as f:
+                    if not f.keys():
+                        log.warning(f"File {file_path} is empty and will be skipped.")
+                        continue
+                tmp_file_dict[file_path] = "ntuple"
+                
             log.info(tmp_file_dict)
 
             events = uproot.concatenate(tmp_file_dict)
@@ -408,16 +428,21 @@ class Data:
             tmp_file_dict = dict()
             # define a dictionary of all files in a class which is then used to load the data with uproot
             for file in self.file_dict[cl]:
-                tmp_file_dict[
-                    os.path.join(
-                        self.sample_path,
-                        "preselection",
-                        self.era,
-                        self.channel,
-                        event_ID,
-                        file + ".root",
-                    )
-                ] = "ntuple"
+                file_path = os.path.join(
+                    self.sample_path,
+                    "preselection",
+                    self.era,
+                    self.channel,
+                    event_ID,
+                    file + ".root",
+                )
+                # Check if the root file is empty
+                with uproot.open(file_path+":ntuple") as f:
+                    if not f.keys():
+                        log.warning(f"File {file_path} is empty and will be skipped.")
+                        continue
+                tmp_file_dict[file_path] = "ntuple"
+                
             log.info(tmp_file_dict)
 
             events = uproot.concatenate(tmp_file_dict)
@@ -484,6 +509,7 @@ class Data:
                 ].copy(deep=True)
             else:
                 pass
+            self.signal_labels.append(self.label_dict[cl])
 
         # add a column with the label to the DateFrame of the class
         df["label"] = [self.label_dict[cl] for _ in range(df.shape[0])]

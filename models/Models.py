@@ -30,14 +30,14 @@ class NNModel(nn.Module):
                     # layers.append(nn.BatchNorm1d(self.input_layer_size, affine=False, track_running_stats=True))
                     layers.append(nn.Linear(self.input_layer_size, hl))
                     layers.append(nn.Tanh())
-                    # layers.append(nn.Dropout(p=self.dropout_p))
+                    layers.append(nn.Dropout(p=self.dropout_p))
                     # layers.append(
                     #     nn.BatchNorm1d(hl, affine=True, track_running_stats=True)
                     # )
                 else:
                     layers.append(nn.Linear(self.hidden_layer_sizes[idx - 1], hl))
                     layers.append(nn.Tanh())
-                    # layers.append(nn.Dropout(p=self.dropout_p))
+                    layers.append(nn.Dropout(p=self.dropout_p))
                     # layers.append(
                     #     nn.BatchNorm1d(hl, affine=True, track_running_stats=True)
                     # )

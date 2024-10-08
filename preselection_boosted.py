@@ -5,6 +5,7 @@ Script for preprocessing n-tuples for the neural network training
 import os
 import argparse
 import yaml
+import json
 import multiprocessing
 
 from io import StringIO
@@ -69,15 +70,16 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
 
         if "friends" in config:
             for friend in config["friends"]:
-                friend_list = []
-                for ntuple in ntuple_list:
-                    friend_list.append(
-                        ntuple.replace("CROWNRun", "CROWNFriends/" + friend)
-                    )
-                fchain = ROOT.TChain(config["tree"])
-                for friend in friend_list:
-                    fchain.Add(friend)
-                chain.AddFriend(fchain)
+                if "fake_factors" not in friend or process == "tau_fakes":
+                    friend_list = []
+                    for ntuple in ntuple_list:
+                        friend_list.append(
+                            ntuple.replace("CROWNRun", "CROWNFriends/" + friend)
+                        )
+                    fchain = ROOT.TChain(config["tree"])
+                    for friend in friend_list:
+                        fchain.Add(friend)
+                    chain.AddFriend(fchain)
 
         rdf = ROOT.RDataFrame(chain)
 
@@ -110,22 +112,22 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
             for weight in mc_weight_conf:
                 if weight == "generator":
                     # calculating generator weight (including cross section weight)
-                    if (
-                        process in ["DYjets", "Wjets"]
-                        and mc_weight_conf["generator"] == "stitching"
-                    ):
-                        rdf = weights.stitching_gen_weight(
-                            rdf=rdf,
-                            era=config["era"],
-                            process=process,
-                            sample_info=datasets[sample],
-                        )
+                    if "stitching" in mc_weight_conf["generator"]: 
+                        if process in mc_weight_conf["generator"]["stitching"]:
+                            rdf = weights.stitching_gen_weight(
+                                rdf=rdf,
+                                era=config["era"],
+                                process=process,
+                                sample_info=datasets[sample],
+                            )
+                        else:
+                            rdf = weights.gen_weight(rdf=rdf, sample_info=datasets[sample])
                     else:
                         rdf = weights.gen_weight(rdf=rdf, sample_info=datasets[sample])
                 elif weight == "lumi":
                     rdf = weights.lumi_weight(rdf=rdf, era=config["era"])
                 elif weight == "Z_pt_reweighting":
-                    if process == "DYjets":
+                    if process in ["DYjets"]:
                         rdf = rdf.Redefine(
                             "weight", f"weight * ({mc_weight_conf[weight]})"
                         )
@@ -144,44 +146,46 @@ def run_preselection(args: Tuple[str, Dict[str, Union[Dict, List, str]]]) -> Non
 
         # apply special analysis event filters: tau vs jet ID, btag
         selection_conf = config["special_event_selection"]
-        if process == "tau_fakes":
-            if "had_boostedtau_id_iso" in selection_conf:
-                rdf = rdf.Filter(
-                    f"({selection_conf['had_boostedtau_id_iso'][1]})",
-                    "cut on had_boostedtau_id_iso",
-                )
-                wp = selection_conf["had_boostedtau_id_iso"][1].rsplit("_")[3]
-                rdf = weights.apply_boosted_fake_factors(
-                    rdf=rdf, channel=config["channel"], wp=wp
-                )
-        else:
-            if "had_boostedtau_id_iso" in selection_conf:
-                rdf = rdf.Filter(
-                    f"({selection_conf['had_boostedtau_id_iso'][0]})",
-                    "cut on had_boostedtau_id_iso",
-                )
-                wp = selection_conf["had_boostedtau_id_iso"][0].rsplit("_")[3]
-                rdf = weights.apply_boostedtau_id_iso_weight(
-                    rdf=rdf, channel=config["channel"], wp=wp
-                )
+        for cut in selection_conf:
+            if process == "tau_fakes":
+                if "had_boostedtau_id_iso" in cut:
+                    rdf = rdf.Filter(
+                        f"({selection_conf['had_boostedtau_id_iso'][1]})",
+                        "cut on had_boostedtau_id_iso",
+                    )
+                    # wp = selection_conf["had_boostedtau_id_iso"][1].rsplit("_")[3]
+                    # rdf = weights.apply_boosted_fake_factors(
+                    #     rdf=rdf, channel=config["channel"], wp=wp
+                    # )
+            else:
+                if "had_boostedtau_id_iso" in cut:
+                    rdf = rdf.Filter(
+                        f"({selection_conf['had_boostedtau_id_iso'][0]})",
+                        "cut on had_boostedtau_id_iso",
+                    )
+                    wp = selection_conf["had_boostedtau_id_iso"][0].rsplit("_")[3]
+                    rdf = weights.apply_boostedtau_id_iso_weight(
+                        rdf=rdf, channel=config["channel"], wp=wp
+                    )
 
-        if "good_bb_pair" in selection_conf:
-            if process not in ["tau_fakes", "embedding"]:
-                rdf = weights.apply_boostedtau_btag_weight(rdf=rdf)
-            rdf = rdf.Filter(
-                f"({selection_conf['good_bb_pair']})", "cut on good_bb_pair"
-            )
+            if "good_bb_pair" in cut:
+                if process not in ["tau_fakes", "embedding"]:
+                    rdf = weights.apply_boostedtau_pNet_weight(rdf=rdf)
+                    rdf = weights.apply_boostedtau_btag_weight(rdf=rdf)
+                rdf = rdf.Filter(
+                    f"({selection_conf['good_bb_pair']})", "cut on good_bb_pair"
+                )   
             
         # additional variable definitions
         # rdf = rdf.Define("deltaPhi_met_tau1", "ROOT::VecOps::DeltaPhi(metphi_boosted, boosted_phi_1)*1")
         # rdf = rdf.Define("deltaPhi_met_tau2", "ROOT::VecOps::DeltaPhi(metphi_boosted, boosted_phi_2)*1")
-        rdf = rdf.Redefine("fj_Xbb_pt_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_pt_boosted : -10.;")
-        rdf = rdf.Redefine("fj_Xbb_phi_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_phi_boosted : -10.;")
-        rdf = rdf.Redefine("fj_Xbb_msoftdrop_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_msoftdrop_boosted : -10.;")
-        rdf = rdf.Redefine("fj_Xbb_nsubjettiness_2over1_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_nsubjettiness_2over1_boosted : -10.;")
-        rdf = rdf.Redefine("fj_Xbb_nsubjettiness_3over2_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_nsubjettiness_3over2_boosted : -10.;")
-        rdf = rdf.Redefine("fj_Xbb_mass_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_mass_boosted : -10.;")
-        rdf = rdf.Redefine("fj_Xbb_eta_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_eta_boosted : -10.;")
+        # rdf = rdf.Redefine("fj_Xbb_pt_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_pt_boosted : -10.;")
+        # rdf = rdf.Redefine("fj_Xbb_phi_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_phi_boosted : -10.;")
+        # rdf = rdf.Redefine("fj_Xbb_msoftdrop_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_msoftdrop_boosted : -10.;")
+        # rdf = rdf.Redefine("fj_Xbb_nsubjettiness_2over1_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_nsubjettiness_2over1_boosted : -10.;")
+        # rdf = rdf.Redefine("fj_Xbb_nsubjettiness_3over2_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_nsubjettiness_3over2_boosted : -10.;")
+        # rdf = rdf.Redefine("fj_Xbb_mass_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_mass_boosted : -10.;")
+        # rdf = rdf.Redefine("fj_Xbb_eta_boosted", "(abs(fj_Xbb_eta_boosted)<=2.5) ? fj_Xbb_eta_boosted : -10.;")
 
         # splitting data frame based on the tau origin (genuine, jet fake, lepton fake)
         for tau_gen_mode in config["processes"][process]["tau_gen_modes"]:
@@ -262,8 +266,8 @@ if __name__ == "__main__":
         config = yaml.load(file, yaml.FullLoader)
 
     # loading general dataset info file for xsec and event number
-    with open("datasets/datasets.yaml", "r") as file:
-        datasets = yaml.load(file, yaml.FullLoader)
+    with open("datasets/datasets.json", "r") as file:
+        datasets = json.load(file)
 
     # define output path for the preselected samples
     output_path = os.path.join(
@@ -285,26 +289,27 @@ if __name__ == "__main__":
         masses_X=config["masses_X"], masses_Y=config["masses_Y"]
     )
 
-    YttHbb_samples = list()
-    YbbHtt_samples = list()
-
-    for comb in mass_combinations:
-        YttHbb_string = config["processes"]["XToYHTo2Tau2B"]["samples"][0]
-        YbbHtt_string = config["processes"]["XToYHTo2B2Tau"]["samples"][0]
-
-        YttHbb_samples.append(
-            YttHbb_string.replace("massX", comb["massX"]).replace(
-                "massY", comb["massY"]
+    if "XToYHTo2Tau2B" in config["processes"]: 
+        YttHbb_samples = list()
+        for comb in mass_combinations:
+            YttHbb_string = config["processes"]["XToYHTo2Tau2B"]["samples"][0]
+            YttHbb_samples.append(
+                YttHbb_string.replace("massX", comb["massX"]).replace(
+                    "massY", comb["massY"]
+                )
             )
-        )
-        YbbHtt_samples.append(
-            YbbHtt_string.replace("massX", comb["massX"]).replace(
-                "massY", comb["massY"]
+        config["processes"]["XToYHTo2Tau2B"]["samples"] = YttHbb_samples
+        
+    if "XToYHTo2B2Tau" in config["processes"]:
+        YbbHtt_samples = list()
+        for comb in mass_combinations:
+            YbbHtt_string = config["processes"]["XToYHTo2B2Tau"]["samples"][0]
+            YbbHtt_samples.append(
+                YbbHtt_string.replace("massX", comb["massX"]).replace(
+                    "massY", comb["massY"]
+                )
             )
-        )
-
-    config["processes"]["XToYHTo2Tau2B"]["samples"] = YttHbb_samples
-    config["processes"]["XToYHTo2B2Tau"]["samples"] = YbbHtt_samples
+        config["processes"]["XToYHTo2B2Tau"]["samples"] = YbbHtt_samples
 
     # going through all wanted processes and run the preselection function with a pool of 8 workers
     args_list = [(process, config) for process in config["processes"]]
