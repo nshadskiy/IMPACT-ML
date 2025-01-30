@@ -26,5 +26,5 @@ python preselection.py --config-file configs/PATH/CONFIG.yaml
 ## Training 
 To train a network run:
 ```bash
-python trochscript.py ...
+python trochscript.py -i /ceph/USER/SOME/PATH/FOLDER -c configs/FILE.yaml -y 2018 -k mt -s even -o SOME_OUTPUT_NAME -e 2000
 ```
