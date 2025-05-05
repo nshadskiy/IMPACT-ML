@@ -1,0 +1,54 @@
+# Project information
+site_name: IMPACT-ML
+site_url: https://IMPACT-ML.github.io/
+site_author: Nikita Shadskiy
+site_description: >-
+  Framework for ML in HEP.
+  Using parameterization.
+
+# Repository
+repo_name: nshadskiy/IMPACT-ML.github.io
+repo_url: https://github.com/nshadskiy/IMPACT-ML.github.io/
+
+# Copyright
+copyright: Copyright &copy; 2025 Nikita Shadskiy
+
+# Theme
+theme:
+  name: material
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.tooltips
+    - navigation.sections
+  icon:
+    logo: logo
+
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: warn
+  links:
+    not_found: warn
+    absolute_links: warn
+    unrecognized_links: warn
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - attr_list
+  - footnotes
+  - toc:
+      permalink: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.keys
+  - pymdownx.tabbed:
+      alternate_style: true
