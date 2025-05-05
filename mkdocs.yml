@@ -21,7 +21,7 @@ theme:
     - content.action.view
     - content.tooltips
     - navigation.sections
-  logo: assets/images/logo.jpeg
+  logo: images/logo.svg
 
 validation:
   nav:
