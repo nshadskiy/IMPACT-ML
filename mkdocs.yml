@@ -1,14 +1,14 @@
 # Project information
 site_name: IMPACT-ML
-site_url: https://IMPACT-ML.github.io/
+site_url: https://nshadskiy.github.io/IMPACT-ML/
 site_author: Nikita Shadskiy
 site_description: >-
   Framework for ML in HEP.
   Using parameterization.
 
 # Repository
-repo_name: nshadskiy/IMPACT-ML.github.io
-repo_url: https://github.com/nshadskiy/IMPACT-ML.github.io/
+repo_name: nshadskiy/IMPACT-ML
+repo_url: https://github.com/nshadskiy/IMPACT-ML/
 
 # Copyright
 copyright: Copyright &copy; 2025 Nikita Shadskiy
@@ -22,7 +22,7 @@ theme:
     - content.tooltips
     - navigation.sections
   icon:
-    logo: logo
+    logo: docs/images/logo.jpeg
 
 validation:
   nav:
